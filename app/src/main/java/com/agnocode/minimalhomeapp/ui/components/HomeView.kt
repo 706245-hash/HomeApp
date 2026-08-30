@@ -1,6 +1,7 @@
 package com.agnocode.minimalhomeapp.ui.components
 
 import android.content.Intent
+import android.net.Uri
 import android.provider.AlarmClock
 import android.util.Log
 import androidx.compose.foundation.background
@@ -67,6 +68,13 @@ fun HomeView(
                 detectVerticalDragGestures { _, dragAmount ->
                     if (dragAmount > 20f) {
                         expandNotifications()
+                    } else if (dragAmount < -20f) {
+                        try {
+                            val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://google.com"))
+                            context.startActivity(intent)
+                        } catch (e: Exception) {
+                            Log.e("HomeApp", "Could not open browser", e)
+                        }
                     }
                 }
             }
@@ -162,6 +170,20 @@ fun HomeView(
                 .align(Alignment.BottomCenter)
                 .safeDrawingPadding()
                 .padding(start = 24.dp, end = 24.dp, bottom = 24.dp)
+                .clickable(
+                    interactionSource = remember { MutableInteractionSource() },
+                    indication = null
+                ) {
+                    try {
+                        val intent = Intent(Intent.ACTION_MAIN).apply {
+                            addCategory(Intent.CATEGORY_APP_CALENDAR)
+                            flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                        }
+                        context.startActivity(intent)
+                    } catch (e: Exception) {
+                        Log.e("HomeApp", "Could not open calendar app", e)
+                    }
+                }
         )
     }
 }
