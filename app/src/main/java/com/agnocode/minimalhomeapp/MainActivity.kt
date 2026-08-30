@@ -87,6 +87,8 @@ fun HomeScreen(viewModel: HomeViewModel = viewModel()) {
             1 -> AppDrawerView(
                 apps = viewModel.getVisibleApps(),
                 searchQuery = viewModel.searchQuery.value,
+                isRefreshing = viewModel.isRefreshing.value,
+                onRefresh = { viewModel.refreshApps() },
                 onSearchQueryChange = { viewModel.searchQuery.value = it },
                 onOpenSettings = { showSettings = true },
                 onToggleFavorite = { viewModel.toggleFavorite(it) },

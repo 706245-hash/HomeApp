@@ -7,10 +7,9 @@ import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.Text
+import androidx.compose.material3.*
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
+import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -22,10 +21,13 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.agnocode.minimalhomeapp.data.model.AppItem
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AppDrawerView(
     apps: List<AppItem>,
     searchQuery: String,
+    isRefreshing: Boolean,
+    onRefresh: () -> Unit,
     onSearchQueryChange: (String) -> Unit,
     onOpenSettings: () -> Unit,
     onToggleFavorite: (String) -> Unit,
@@ -81,17 +83,28 @@ fun AppDrawerView(
 
         HorizontalDivider(color = Color.DarkGray, thickness = 0.5.dp)
 
-        LazyColumn(
-            modifier = Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(vertical = 16.dp)
+        PullToRefreshBox(
+            isRefreshing = isRefreshing,
+            onRefresh = onRefresh,
+            modifier = Modifier.fillMaxSize()
         ) {
-            items(apps) { app ->
-                AppListItem(
-                    app = app,
-                    isFavorite = isFavorite(app.packageName),
-                    onToggleFavorite = { onToggleFavorite(app.packageName) },
-                    onBlock = { duration -> onBlock(app.packageName, duration) }
-                )
+            LazyColumn(
+                modifier = Modifier.fillMaxSize(),
+                contentPadding = PaddingValues(vertical = 16.dp)
+            ) {
+                items(
+                    items = apps,
+                    key = { it.packageName }
+                ) { app ->
+                    Box(modifier = Modifier.animateItem()) {
+                        AppListItem(
+                            app = app,
+                            isFavorite = isFavorite(app.packageName),
+                            onToggleFavorite = { onToggleFavorite(app.packageName) },
+                            onBlock = { duration -> onBlock(app.packageName, duration) }
+                        )
+                    }
+                }
             }
         }
     }

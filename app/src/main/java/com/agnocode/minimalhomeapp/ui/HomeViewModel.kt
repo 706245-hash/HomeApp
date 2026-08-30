@@ -28,6 +28,9 @@ class HomeViewModel @Inject constructor(
     private val _apps = mutableStateListOf<AppItem>()
     val apps: List<AppItem> = _apps
 
+    var isRefreshing = mutableStateOf(false)
+        private set
+
     val favoritePackages = mutableStateListOf<String>()
     val blockedApps = mutableStateMapOf<String, Long?>()
 
@@ -50,9 +53,13 @@ class HomeViewModel @Inject constructor(
 
     fun refreshApps() {
         viewModelScope.launch {
+            isRefreshing.value = true
+            // Artificial delay to make the refresh feel more substantial
+            delay(1000L)
             val newList = repository.getInstalledApps()
             _apps.clear()
             _apps.addAll(newList)
+            isRefreshing.value = false
         }
     }
 
