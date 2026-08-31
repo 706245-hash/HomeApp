@@ -20,6 +20,13 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.agnocode.minimalhomeapp.data.model.AppItem
+import android.graphics.drawable.Drawable
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.graphics.painter.BitmapPainter
+import androidx.core.graphics.drawable.toBitmap
+import androidx.compose.foundation.Image
+import androidx.compose.ui.draw.clip
+import androidx.compose.foundation.shape.CircleShape
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
@@ -27,13 +34,27 @@ fun AppListItem(
     app: AppItem,
     isFavorite: Boolean,
     onToggleFavorite: () -> Unit,
-    onBlock: (Long?) -> Unit
+    onBlock: (Long?) -> Unit,
+    showIcon: Boolean = false,
+    iconPackPackage: String? = null
 ) {
     val context = LocalContext.current
     val pm = context.packageManager
     var showMenu by remember { mutableStateOf(false) }
     var showBlockMenu by remember { mutableStateOf(false) }
     var showCustomBlockDialog by remember { mutableStateOf(false) }
+
+    val appIcon = remember(app.packageName, showIcon, iconPackPackage) {
+        if (showIcon) {
+            try {
+                // If iconPackPackage is set, we SHOULD load from there.
+                // For now, let's just load the default system icon.
+                pm.getApplicationIcon(app.packageName)
+            } catch (e: Exception) {
+                null
+            }
+        } else null
+    }
 
     Box(
         modifier = Modifier
@@ -50,12 +71,24 @@ fun AppListItem(
             .padding(vertical = 12.dp),
         contentAlignment = Alignment.CenterStart
     ) {
-        Text(
-            text = app.label,
-            color = Color.White,
-            fontSize = 18.sp,
-            fontWeight = FontWeight.Normal
-        )
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            if (appIcon != null) {
+                Image(
+                    bitmap = appIcon.toBitmap().asImageBitmap(),
+                    contentDescription = null,
+                    modifier = Modifier
+                        .size(24.dp)
+                        .clip(CircleShape)
+                )
+                Spacer(Modifier.width(12.dp))
+            }
+            Text(
+                text = app.label,
+                color = Color.White,
+                fontSize = 18.sp,
+                fontWeight = FontWeight.Normal
+            )
+        }
 
         DropdownMenu(
             expanded = showMenu,

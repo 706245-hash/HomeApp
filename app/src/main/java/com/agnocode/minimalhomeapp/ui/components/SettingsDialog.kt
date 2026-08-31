@@ -3,6 +3,8 @@ package com.agnocode.minimalhomeapp.ui.components
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.provider.Settings
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -19,30 +21,38 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.agnocode.minimalhomeapp.data.model.AppItem
+import com.agnocode.minimalhomeapp.data.model.FocusMode
 
 @Composable
 fun SettingsDialog(
     onDismiss: () -> Unit,
     blockedApps: Map<String, Long?>,
     allApps: List<AppItem>,
-    onUnblock: (String) -> Unit
+    onUnblock: (String) -> Unit,
+    focusModes: List<FocusMode>,
+    activeFocusModeName: String?,
+    onToggleFocusMode: (String?) -> Unit,
+    onAddFocusMode: (String, Set<String>, Int?, Int?) -> Unit,
+    onDeleteFocusMode: (String) -> Unit,
+    fontFamily: String,
+    onSetFontFamily: (String) -> Unit,
+    showIcons: Boolean,
+    onSetShowIcons: (Boolean) -> Unit,
+    availableIconPacks: List<AppItem>,
+    selectedIconPack: String?,
+    onSetIconPack: (String?) -> Unit
 ) {
     val context = LocalContext.current
     var isDefault by remember { mutableStateOf(false) }
     val lifecycleOwner = LocalLifecycleOwner.current
 
-    // Function to check if this app is the default launcher
     fun checkDefault() {
         val intent = Intent(Intent.ACTION_MAIN).apply { addCategory(Intent.CATEGORY_HOME) }
         val resolveInfo = context.packageManager.resolveActivity(intent, PackageManager.MATCH_DEFAULT_ONLY)
         val resolvedPackage = resolveInfo?.activityInfo?.packageName
-        
-        // If the resolved package is "android" or "com.google.android.permissioncontroller", 
-        // it usually means the system chooser will be shown (no default set).
         isDefault = resolvedPackage == context.packageName
     }
 
-    // Refresh the check when the dialog is shown and every time the activity resumes
     DisposableEffect(lifecycleOwner) {
         val observer = LifecycleEventObserver { _, event ->
             if (event == Lifecycle.Event.ON_RESUME) {
@@ -55,7 +65,6 @@ fun SettingsDialog(
         }
     }
 
-    // Initial check
     LaunchedEffect(Unit) {
         checkDefault()
     }
@@ -63,12 +72,7 @@ fun SettingsDialog(
     AlertDialog(
         onDismissRequest = onDismiss,
         containerColor = Color.DarkGray,
-        title = {
-            Text(
-                "Settings",
-                color = Color.White
-            )
-        },
+        title = { Text("Settings", color = Color.White) },
         text = {
             Column {
                 if (!isDefault) {
@@ -79,48 +83,203 @@ fun SettingsDialog(
                         },
                         modifier = Modifier.fillMaxWidth()
                     ) {
-                        Text(
-                            "Set as Default Launcher",
-                            color = Color.White
-                        )
+                        Text("Set as Default Launcher", color = Color.White)
                     }
                 }
 
                 HorizontalDivider(color = Color.Gray, modifier = Modifier.padding(vertical = 16.dp))
 
-                Text(
-                    "Blocked Apps",
-                    color = Color.LightGray,
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier.padding(bottom = 8.dp)
-                )
+                var editingMode by remember { mutableStateOf<FocusMode?>(null) }
+                var showAddFocusMode by remember { mutableStateOf(false) }
 
-                if (blockedApps.isEmpty()) {
-                    Text(
-                        "No apps blocked",
-                        color = Color.Gray,
-                        fontSize = 14.sp
-                    )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text("Focus Modes", color = Color.LightGray, fontWeight = FontWeight.Bold)
+                    TextButton(onClick = { showAddFocusMode = true }) {
+                        Text("Add", color = Color.White)
+                    }
+                }
+
+                if (focusModes.isEmpty()) {
+                    Text("No focus modes defined", color = Color.Gray, fontSize = 14.sp)
                 } else {
-                    LazyColumn(modifier = Modifier.heightIn(max = 300.dp)) {
-                        items(blockedApps.toList()) { (pkg, expiry) ->
-                            val app = allApps.find { it.packageName == pkg }
+                    focusModes.forEach { mode ->
+                        val isActive = activeFocusModeName == mode.name
+                        Column(modifier = Modifier.padding(vertical = 4.dp)) {
                             Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(vertical = 4.dp),
+                                modifier = Modifier.fillMaxWidth(),
                                 verticalAlignment = Alignment.CenterVertically,
                                 horizontalArrangement = Arrangement.SpaceBetween
                             ) {
                                 Column(modifier = Modifier.weight(1f)) {
                                     Text(
-                                        app?.label ?: pkg,
-                                        color = Color.White,
-                                        fontSize = 16.sp
+                                        mode.name,
+                                        color = if (isActive) Color.White else Color.Gray,
+                                        fontSize = 16.sp,
+                                        fontWeight = if (isActive) FontWeight.Bold else FontWeight.Normal
                                     )
-                                    val timeLabel = if (expiry == null) {
-                                        "∞"
-                                    } else {
+                                    val scheduleText = if (mode.startTime != null && mode.endTime != null) {
+                                        "Schedule: ${formatMinutes(mode.startTime)} - ${formatMinutes(mode.endTime)}"
+                                    } else "Manual"
+                                    Text(
+                                        "${mode.allowedPackages.size} apps • $scheduleText",
+                                        color = Color.DarkGray,
+                                        fontSize = 12.sp
+                                    )
+                                }
+                                Row {
+                                    TextButton(onClick = { onToggleFocusMode(if (isActive) null else mode.name) }) {
+                                        Text(if (isActive) "Off" else "On", color = if (isActive) Color.Red else Color.Green)
+                                    }
+                                    TextButton(onClick = { editingMode = mode }) {
+                                        Text("Edit", color = Color.White)
+                                    }
+                                    TextButton(onClick = { onDeleteFocusMode(mode.name) }) {
+                                        Text("Del", color = Color.DarkGray)
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                if (showAddFocusMode) {
+                    FocusModeDialog(
+                        allApps = allApps,
+                        onDismiss = { showAddFocusMode = false },
+                        onConfirm = { name, pkgs, start, end ->
+                            onAddFocusMode(name, pkgs, start, end)
+                            showAddFocusMode = false
+                        }
+                    )
+                }
+
+                if (editingMode != null) {
+                    FocusModeDialog(
+                        allApps = allApps,
+                        existingMode = editingMode,
+                        onDismiss = { editingMode = null },
+                        onConfirm = { name, pkgs, start, end ->
+                            onAddFocusMode(name, pkgs, start, end)
+                            editingMode = null
+                        }
+                    )
+                }
+
+                HorizontalDivider(color = Color.Gray, modifier = Modifier.padding(vertical = 16.dp))
+
+                Text("Customization", color = Color.LightGray, fontWeight = FontWeight.Bold, modifier = Modifier.padding(bottom = 8.dp))
+
+                // Font Family Picker
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text("Font Family", color = Color.White, fontSize = 16.sp)
+                    var showFontMenu by remember { mutableStateOf(false) }
+                    Box {
+                        TextButton(onClick = { showFontMenu = true }) {
+                            Text(fontFamily.replaceFirstChar { it.uppercase() }, color = Color.Gray)
+                        }
+                        DropdownMenu(
+                            expanded = showFontMenu,
+                            onDismissRequest = { showFontMenu = false },
+                            modifier = Modifier.background(Color.DarkGray)
+                        ) {
+                            listOf("default", "serif", "monospace", "sans-serif").forEach { font ->
+                                DropdownMenuItem(
+                                    text = { Text(font.replaceFirstChar { it.uppercase() }, color = Color.White) },
+                                    onClick = {
+                                        onSetFontFamily(font)
+                                        showFontMenu = false
+                                    }
+                                )
+                            }
+                        }
+                    }
+                }
+
+                // Show Icons Toggle
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text("Show App Icons", color = Color.White, fontSize = 16.sp)
+                    Switch(
+                        checked = showIcons,
+                        onCheckedChange = onSetShowIcons,
+                        colors = SwitchDefaults.colors(
+                            checkedThumbColor = Color.White,
+                            checkedTrackColor = Color.Gray,
+                            uncheckedThumbColor = Color.DarkGray,
+                            uncheckedTrackColor = Color.Black
+                        )
+                    )
+                }
+
+                if (showIcons) {
+                    // Icon Pack Picker
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text("Icon Pack", color = Color.White, fontSize = 16.sp)
+                        var showIconMenu by remember { mutableStateOf(false) }
+                        Box {
+                            TextButton(onClick = { showIconMenu = true }) {
+                                val label = availableIconPacks.find { it.packageName == selectedIconPack }?.label ?: "Default"
+                                Text(label, color = Color.Gray)
+                            }
+                            DropdownMenu(
+                                expanded = showIconMenu,
+                                onDismissRequest = { showIconMenu = false },
+                                modifier = Modifier.background(Color.DarkGray)
+                            ) {
+                                DropdownMenuItem(
+                                    text = { Text("Default", color = Color.White) },
+                                    onClick = {
+                                        onSetIconPack(null)
+                                        showIconMenu = false
+                                    }
+                                )
+                                availableIconPacks.forEach { pack ->
+                                    DropdownMenuItem(
+                                        text = { Text(pack.label, color = Color.White) },
+                                        onClick = {
+                                            onSetIconPack(pack.packageName)
+                                            showIconMenu = false
+                                        }
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+
+                HorizontalDivider(color = Color.Gray, modifier = Modifier.padding(vertical = 16.dp))
+
+                Text("Blocked Apps", color = Color.LightGray, fontWeight = FontWeight.Bold, modifier = Modifier.padding(bottom = 8.dp))
+
+                if (blockedApps.isEmpty()) {
+                    Text("No apps blocked", color = Color.Gray, fontSize = 14.sp)
+                } else {
+                    LazyColumn(modifier = Modifier.heightIn(max = 200.dp)) {
+                        items(blockedApps.toList()) { (pkg, expiry) ->
+                            val app = allApps.find { it.packageName == pkg }
+                            Row(
+                                modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(app?.label ?: pkg, color = Color.White, fontSize = 16.sp)
+                                    val timeLabel = if (expiry == null) "∞" else {
                                         val remaining = expiry - System.currentTimeMillis()
                                         if (remaining <= 0) "Expired" else {
                                             val mins = (remaining / 60000).toInt()
@@ -128,11 +287,7 @@ fun SettingsDialog(
                                             if (hrs > 0) "${hrs}h ${mins % 60}m" else "${mins}m"
                                         }
                                     }
-                                    Text(
-                                        timeLabel,
-                                        color = Color.Gray,
-                                        fontSize = 12.sp
-                                    )
+                                    Text(timeLabel, color = Color.Gray, fontSize = 12.sp)
                                 }
                                 TextButton(onClick = { onUnblock(pkg) }) {
                                     Text("Unblock", color = Color.Red)
@@ -144,25 +299,111 @@ fun SettingsDialog(
             }
         },
         confirmButton = {
-            Row(
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                val versionName = try {
-                    context.packageManager.getPackageInfo(context.packageName, 0).versionName
-                } catch (e: Exception) {
-                    "1.0.0"
-                }
-                Text(
-                    text = "v$versionName",
-                    color = Color.Gray,
-                    fontSize = 12.sp
-                )
-                TextButton(onClick = onDismiss) {
-                    Text("Close", color = Color.White)
-                }
+            TextButton(onClick = onDismiss) {
+                Text("Close", color = Color.White)
             }
         }
     )
+}
+
+@Composable
+fun FocusModeDialog(
+    allApps: List<AppItem>,
+    existingMode: FocusMode? = null,
+    onDismiss: () -> Unit,
+    onConfirm: (String, Set<String>, Int?, Int?) -> Unit
+) {
+    var name by remember { mutableStateOf(existingMode?.name ?: "") }
+    val selectedPackages = remember { mutableStateListOf<String>().apply { if (existingMode != null) addAll(existingMode.allowedPackages) } }
+    
+    var startH by remember { mutableStateOf(existingMode?.startTime?.let { it / 60 }?.toString() ?: "") }
+    var startM by remember { mutableStateOf(existingMode?.startTime?.let { it % 60 }?.toString() ?: "") }
+    var endH by remember { mutableStateOf(existingMode?.endTime?.let { it / 60 }?.toString() ?: "") }
+    var endM by remember { mutableStateOf(existingMode?.endTime?.let { it % 60 }?.toString() ?: "") }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        containerColor = Color.DarkGray,
+        title = { Text(if (existingMode == null) "New Focus Mode" else "Edit Focus Mode", color = Color.White) },
+        text = {
+            Column {
+                OutlinedTextField(
+                    value = name,
+                    onValueChange = { name = it },
+                    label = { Text("Mode Name") },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
+                    textStyle = androidx.compose.ui.text.TextStyle(color = Color.White),
+                    enabled = existingMode == null // Name is unique ID
+                )
+                Spacer(Modifier.height(8.dp))
+                
+                Text("Schedule (24h format, optional):", color = Color.LightGray, fontSize = 12.sp)
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    TimeInput(value = startH, onValueChange = { if (it.length <= 2) startH = it }, placeholder = "HH")
+                    Text(":", color = Color.White)
+                    TimeInput(value = startM, onValueChange = { if (it.length <= 2) startM = it }, placeholder = "MM")
+                    Text(" to ", color = Color.LightGray)
+                    TimeInput(value = endH, onValueChange = { if (it.length <= 2) endH = it }, placeholder = "HH")
+                    Text(":", color = Color.White)
+                    TimeInput(value = endM, onValueChange = { if (it.length <= 2) endM = it }, placeholder = "MM")
+                }
+                
+                Spacer(Modifier.height(16.dp))
+                Text("Select Allowed Apps:", color = Color.LightGray, fontWeight = FontWeight.Bold)
+                LazyColumn(modifier = Modifier.height(200.dp)) {
+                    items(allApps) { app ->
+                        val isSelected = selectedPackages.contains(app.packageName)
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable {
+                                    if (isSelected) selectedPackages.remove(app.packageName)
+                                    else selectedPackages.add(app.packageName)
+                                }
+                                .padding(vertical = 4.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Checkbox(checked = isSelected, onCheckedChange = null)
+                            Text(app.label, color = Color.White, modifier = Modifier.padding(start = 8.dp))
+                        }
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(
+                onClick = {
+                    if (name.isNotBlank()) {
+                        val start = startH.toIntOrNull()?.let { h -> startM.toIntOrNull()?.let { m -> h * 60 + m } }
+                        val end = endH.toIntOrNull()?.let { h -> endM.toIntOrNull()?.let { m -> h * 60 + m } }
+                        onConfirm(name, selectedPackages.toSet(), start, end)
+                    }
+                }
+            ) {
+                Text(if (existingMode == null) "Create" else "Save", color = Color.Green)
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text("Cancel", color = Color.White) }
+        }
+    )
+}
+
+@Composable
+fun TimeInput(value: String, onValueChange: (String) -> Unit, placeholder: String) {
+    OutlinedTextField(
+        value = value,
+        onValueChange = onValueChange,
+        placeholder = { Text(placeholder, color = Color.DarkGray, fontSize = 12.sp) },
+        modifier = Modifier.width(60.dp).padding(2.dp),
+        textStyle = androidx.compose.ui.text.TextStyle(color = Color.White, fontSize = 12.sp),
+        singleLine = true
+    )
+}
+
+fun formatMinutes(minutes: Int): String {
+    val h = minutes / 60
+    val m = minutes % 60
+    return "%02d:%02d".format(h, m)
 }

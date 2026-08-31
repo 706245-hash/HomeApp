@@ -32,7 +32,9 @@ fun AppDrawerView(
     onOpenSettings: () -> Unit,
     onToggleFavorite: (String) -> Unit,
     onBlock: (String, Long?) -> Unit,
-    isFavorite: (String) -> Boolean
+    isFavorite: (String) -> Boolean,
+    showIcons: Boolean = false,
+    iconPackPackage: String? = null
 ) {
     Column(
         modifier = Modifier
@@ -101,7 +103,9 @@ fun AppDrawerView(
                             app = app,
                             isFavorite = isFavorite(app.packageName),
                             onToggleFavorite = { onToggleFavorite(app.packageName) },
-                            onBlock = { duration -> onBlock(app.packageName, duration) }
+                            onBlock = { duration -> onBlock(app.packageName, duration) },
+                            showIcon = showIcons,
+                            iconPackPackage = iconPackPackage
                         )
                     }
                 }
