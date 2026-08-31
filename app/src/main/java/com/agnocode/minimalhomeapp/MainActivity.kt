@@ -8,6 +8,7 @@ import android.os.Build
 import android.os.Bundle
 import android.util.Log
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.fillMaxSize
@@ -29,6 +30,7 @@ import com.agnocode.minimalhomeapp.ui.components.NotesView
 import com.agnocode.minimalhomeapp.ui.components.SettingsDialog
 import com.agnocode.minimalhomeapp.ui.theme.MinimalHomeAppTheme
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.launch
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
@@ -119,6 +121,17 @@ fun HomeScreen(
 
     var showSettings by remember { mutableStateOf(false) }
     val pagerState = rememberPagerState(initialPage = 1, pageCount = { 3 })
+    val scope = rememberCoroutineScope()
+
+    BackHandler(enabled = (pagerState.currentPage != 1 || showSettings) && !mainViewModel.isUniversalSearchActive.value) {
+        if (showSettings) {
+            showSettings = false
+        } else if (pagerState.currentPage != 1) {
+            scope.launch {
+                pagerState.animateScrollToPage(1)
+            }
+        }
+    }
 
     LaunchedEffect(mainViewModel.resetToHomeEvent) {
         mainViewModel.resetToHomeEvent.collect {

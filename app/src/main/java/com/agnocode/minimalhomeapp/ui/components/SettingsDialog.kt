@@ -87,10 +87,6 @@ fun SettingsDialog(
     var focusModesExpanded by remember { mutableStateOf(false) }
     var blockedAppsExpanded by remember { mutableStateOf(false) }
 
-    BackHandler {
-        onDismiss()
-    }
-
     Surface(
         modifier = Modifier.fillMaxSize(),
         color = Color.Black
