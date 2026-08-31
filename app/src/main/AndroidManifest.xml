@@ -10,6 +10,8 @@
     </queries>
 
     <uses-permission android:name="android.permission.REQUEST_DELETE_PACKAGES" />
+    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" android:maxSdkVersion="32" />
+    <uses-permission android:name="android.permission.USE_EXACT_ALARM" tools:ignore="ExactAlarm" />
 
     <application
         android:name=".HomeApplication"
@@ -42,6 +44,15 @@
             </intent-filter>
 
         </activity>
+
+        <receiver
+            android:name=".data.receiver.FocusModeReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="com.agnocode.minimalhomeapp.ACTION_FOCUS_MODE_TRIGGER" />
+            </intent-filter>
+        </receiver>
+
     </application>
 
 </manifest>

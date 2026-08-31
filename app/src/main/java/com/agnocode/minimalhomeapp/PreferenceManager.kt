@@ -25,6 +25,7 @@ class PreferenceManager(private val context: Context) {
         val SHOW_ICONS = booleanPreferencesKey("show_icons")
         val DAILY_NOTES = stringPreferencesKey("daily_notes") 
         val FAVORITES_INITIALIZED = booleanPreferencesKey("favorites_initialized")
+        val DATA_MIGRATED = booleanPreferencesKey("data_migrated_to_room")
     }
 
     private fun encode(s: String): String = Base64.encodeToString(s.toByteArray(), Base64.NO_WRAP)
@@ -76,6 +77,10 @@ class PreferenceManager(private val context: Context) {
 
     val favoritesInitializedFlow: Flow<Boolean> = context.dataStore.data.map { preferences ->
         preferences[FAVORITES_INITIALIZED] ?: false
+    }
+
+    val dataMigratedFlow: Flow<Boolean> = context.dataStore.data.map { preferences ->
+        preferences[DATA_MIGRATED] ?: false
     }
 
     val dailyNotesFlow: Flow<Map<String, DailyNote>> = context.dataStore.data.map { preferences ->
@@ -162,6 +167,12 @@ class PreferenceManager(private val context: Context) {
         }
     }
 
+    suspend fun setDataMigrated() {
+        context.dataStore.edit { preferences ->
+            preferences[DATA_MIGRATED] = true
+        }
+    }
+
     suspend fun saveDailyNotes(notes: Map<String, DailyNote>) {
         context.dataStore.edit { preferences ->
             val data = notes.values.joinToString("[NOTE]") { note ->
@@ -169,6 +180,14 @@ class PreferenceManager(private val context: Context) {
                 "${note.date}[FIELD]${encode(note.content)}[FIELD]$taskData"
             }
             preferences[DAILY_NOTES] = data
+        }
+    }
+
+    suspend fun clearLegacyData() {
+        context.dataStore.edit { preferences ->
+            preferences.remove(DAILY_NOTES)
+            preferences.remove(FOCUS_MODES)
+            preferences.remove(BLOCKED_EXPIRY) // Will be handled by Room or cleaned up
         }
     }
 }

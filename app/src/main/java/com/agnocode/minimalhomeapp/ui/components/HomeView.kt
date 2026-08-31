@@ -29,6 +29,10 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
+import androidx.compose.ui.input.nestedscroll.NestedScrollSource
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import com.agnocode.minimalhomeapp.data.model.AppItem
 import kotlinx.coroutines.delay
 import java.text.SimpleDateFormat
@@ -62,6 +66,24 @@ fun HomeView(
     var showDashboard by remember { mutableStateOf(false) }
     val context = LocalContext.current
     val focusRequester = remember { FocusRequester() }
+
+    val nestedScrollConnection = remember(isSearchActive) {
+        object : NestedScrollConnection {
+            override fun onPostScroll(
+                consumed: Offset,
+                available: Offset,
+                source: NestedScrollSource
+            ): Offset {
+                // When search is active and we pull down at the top of the list, exit search
+                if (isSearchActive && available.y > 10f && source == NestedScrollSource.UserInput) {
+                    onSearchToggle(false)
+                    onSearchQueryChange("")
+                    return available
+                }
+                return Offset.Zero
+            }
+        }
+    }
     
     if (isSearchActive) {
         BackHandler {
@@ -98,16 +120,17 @@ fun HomeView(
     Box(
         modifier = Modifier
             .fillMaxSize()
+            .nestedScroll(nestedScrollConnection)
             .pointerInput(isSearchActive) {
                 detectVerticalDragGestures { _, dragAmount ->
-                    if (dragAmount > 20f) {
+                    if (dragAmount > 10f) {
                         if (isSearchActive) {
                             onSearchToggle(false)
                             onSearchQueryChange("")
                         } else {
                             expandNotifications()
                         }
-                    } else if (dragAmount < -20f) {
+                    } else if (dragAmount < -10f) {
                         if (!isSearchActive) {
                             onSearchToggle(true)
                         }

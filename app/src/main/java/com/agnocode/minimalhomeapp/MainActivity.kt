@@ -13,91 +13,88 @@ import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontFamily
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.agnocode.minimalhomeapp.ui.HomeViewModel
+import com.agnocode.minimalhomeapp.ui.AppDrawerViewModel
+import com.agnocode.minimalhomeapp.ui.FocusModeViewModel
+import com.agnocode.minimalhomeapp.ui.MainViewModel
+import com.agnocode.minimalhomeapp.ui.NotesViewModel
 import com.agnocode.minimalhomeapp.ui.components.AppDrawerView
 import com.agnocode.minimalhomeapp.ui.components.HomeView
 import com.agnocode.minimalhomeapp.ui.components.NotesView
 import com.agnocode.minimalhomeapp.ui.components.SettingsDialog
+import com.agnocode.minimalhomeapp.ui.theme.MinimalHomeAppTheme
 import dagger.hilt.android.AndroidEntryPoint
-import androidx.compose.material3.Typography
-import androidx.compose.ui.text.TextStyle
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
-    private lateinit var viewModel: HomeViewModel
+    private lateinit var mainViewModel: MainViewModel
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
-            viewModel = viewModel()
-            HomeScreenContainer(viewModel)
+            mainViewModel = viewModel()
+            val notesViewModel: NotesViewModel = viewModel()
+            val appDrawerViewModel: AppDrawerViewModel = viewModel()
+            val focusModeViewModel: FocusModeViewModel = viewModel()
+            
+            HomeScreenContainer(
+                mainViewModel,
+                notesViewModel,
+                appDrawerViewModel,
+                focusModeViewModel
+            )
         }
     }
 
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         if (intent.action == Intent.ACTION_MAIN && intent.hasCategory(Intent.CATEGORY_HOME)) {
-            if (::viewModel.isInitialized) {
-                viewModel.triggerResetToHome()
+            if (::mainViewModel.isInitialized) {
+                mainViewModel.triggerResetToHome()
             }
         }
     }
 }
 
 @Composable
-fun HomeScreenContainer(viewModel: HomeViewModel) {
-    val fontFamily = when (viewModel.fontFamily.value) {
-        "serif" -> FontFamily.Serif
-        "monospace" -> FontFamily.Monospace
-        "sans-serif" -> FontFamily.SansSerif
-        else -> FontFamily.Default
-    }
-
-    val typography = Typography(
-        bodyLarge = TextStyle(fontFamily = fontFamily),
-        bodyMedium = TextStyle(fontFamily = fontFamily),
-        bodySmall = TextStyle(fontFamily = fontFamily),
-        titleLarge = TextStyle(fontFamily = fontFamily),
-        titleMedium = TextStyle(fontFamily = fontFamily),
-        titleSmall = TextStyle(fontFamily = fontFamily),
-        labelLarge = TextStyle(fontFamily = fontFamily),
-        labelMedium = TextStyle(fontFamily = fontFamily),
-        labelSmall = TextStyle(fontFamily = fontFamily),
-        displayLarge = TextStyle(fontFamily = fontFamily),
-        displayMedium = TextStyle(fontFamily = fontFamily),
-        displaySmall = TextStyle(fontFamily = fontFamily),
-        headlineLarge = TextStyle(fontFamily = fontFamily),
-        headlineMedium = TextStyle(fontFamily = fontFamily),
-        headlineSmall = TextStyle(fontFamily = fontFamily)
-    )
-
-    MaterialTheme(
-        colorScheme = MaterialTheme.colorScheme.copy(background = Color.Black),
-        typography = typography
-    ) {
+fun HomeScreenContainer(
+    mainViewModel: MainViewModel,
+    notesViewModel: NotesViewModel,
+    appDrawerViewModel: AppDrawerViewModel,
+    focusModeViewModel: FocusModeViewModel
+) {
+    MinimalHomeAppTheme(fontFamilyName = mainViewModel.fontFamily.value) {
         Surface(color = Color.Black) {
-            HomeScreen(viewModel)
+            HomeScreen(
+                mainViewModel,
+                notesViewModel,
+                appDrawerViewModel,
+                focusModeViewModel
+            )
         }
     }
 }
 
 @Composable
-fun HomeScreen(viewModel: HomeViewModel) {
+fun HomeScreen(
+    mainViewModel: MainViewModel,
+    notesViewModel: NotesViewModel,
+    appDrawerViewModel: AppDrawerViewModel,
+    focusModeViewModel: FocusModeViewModel
+) {
     val context = android.view.ContextThemeWrapper(androidx.compose.ui.platform.LocalContext.current, 0)
 
     DisposableEffect(context) {
         val receiver = object : BroadcastReceiver() {
             override fun onReceive(context: Context?, intent: Intent?) {
                 Log.d("HomeApp", "Package change detected: ${intent?.action}")
-                viewModel.refreshApps()
+                appDrawerViewModel.refreshApps()
             }
         }
         val filter = IntentFilter().apply {
@@ -123,13 +120,15 @@ fun HomeScreen(viewModel: HomeViewModel) {
     var showSettings by remember { mutableStateOf(false) }
     val pagerState = rememberPagerState(initialPage = 1, pageCount = { 3 })
 
-    LaunchedEffect(viewModel.resetToHomeEvent) {
-        viewModel.resetToHomeEvent.collect {
+    LaunchedEffect(mainViewModel.resetToHomeEvent) {
+        mainViewModel.resetToHomeEvent.collect {
             pagerState.animateScrollToPage(1)
-            viewModel.isUniversalSearchActive.value = false
-            viewModel.universalSearchQuery.value = ""
+            mainViewModel.isUniversalSearchActive.value = false
+            mainViewModel.universalSearchQuery.value = ""
         }
     }
+
+    val activeFocusMode = focusModeViewModel.focusModes.find { it.name == focusModeViewModel.activeFocusModeName.value }
 
     HorizontalPager(
         state = pagerState,
@@ -137,42 +136,42 @@ fun HomeScreen(viewModel: HomeViewModel) {
     ) { page ->
         when (page) {
             0 -> NotesView(
-                date = viewModel.selectedNoteDate.value,
-                availableDates = viewModel.getAvailableDates(),
-                noteText = viewModel.currentNoteText.value,
-                tasks = viewModel.currentTasks,
-                onDateSelect = { viewModel.selectNoteDate(it) },
-                onNoteTextChange = { viewModel.updateNoteText(it) },
-                onAddTask = { viewModel.addTask() },
-                onUpdateTaskText = { id, text -> viewModel.updateTaskText(id, text) },
-                onToggleTask = { id, checked -> viewModel.toggleTask(id, checked) },
-                onDeleteTask = { viewModel.deleteTask(it) }
+                date = notesViewModel.selectedNoteDate.value,
+                availableDates = notesViewModel.getAvailableDates(),
+                noteText = notesViewModel.currentNoteText.value,
+                tasks = notesViewModel.currentTasks,
+                onDateSelect = { notesViewModel.selectNoteDate(it) },
+                onNoteTextChange = { notesViewModel.updateNoteText(it) },
+                onAddTask = { notesViewModel.addTask() },
+                onUpdateTaskText = { id, text -> notesViewModel.updateTaskText(id, text) },
+                onToggleTask = { id, checked -> notesViewModel.toggleTask(id, checked) },
+                onDeleteTask = { notesViewModel.deleteTask(it) }
             )
             1 -> HomeView(
-                favorites = viewModel.getFavorites(),
-                searchResults = viewModel.getUniversalSearchResults(),
-                isSearchActive = viewModel.isUniversalSearchActive.value,
-                searchQuery = viewModel.universalSearchQuery.value,
-                tasksCount = viewModel.currentTasks.count { !it.isChecked },
-                onSearchQueryChange = { viewModel.universalSearchQuery.value = it },
-                onSearchToggle = { viewModel.isUniversalSearchActive.value = it },
-                onRemoveFavorite = { viewModel.removeFavorite(it) },
-                onBlock = { pkg, expiry -> viewModel.blockApp(pkg, expiry) },
-                showIcons = viewModel.showIcons.value,
-                iconPackPackage = viewModel.iconPackPackage.value
+                favorites = appDrawerViewModel.getVisibleApps(activeFocusMode?.allowedPackages).filter { it.packageName in appDrawerViewModel.favoritePackages },
+                searchResults = appDrawerViewModel.apps.filter { it.label.contains(mainViewModel.universalSearchQuery.value, ignoreCase = true) && it.packageName !in focusModeViewModel.blockedApps }.take(5),
+                isSearchActive = mainViewModel.isUniversalSearchActive.value,
+                searchQuery = mainViewModel.universalSearchQuery.value,
+                tasksCount = notesViewModel.currentTasks.count { !it.isChecked },
+                onSearchQueryChange = { mainViewModel.universalSearchQuery.value = it },
+                onSearchToggle = { mainViewModel.isUniversalSearchActive.value = it },
+                onRemoveFavorite = { appDrawerViewModel.toggleFavorite(it) },
+                onBlock = { pkg, expiry -> focusModeViewModel.blockApp(pkg, expiry) },
+                showIcons = appDrawerViewModel.showIcons.value,
+                iconPackPackage = appDrawerViewModel.iconPackPackage.value
             )
             2 -> AppDrawerView(
-                apps = viewModel.getVisibleApps(),
-                searchQuery = viewModel.searchQuery.value,
-                isRefreshing = viewModel.isRefreshing.value,
-                onRefresh = { viewModel.refreshApps() },
-                onSearchQueryChange = { viewModel.searchQuery.value = it },
+                apps = appDrawerViewModel.getVisibleApps(activeFocusMode?.allowedPackages),
+                searchQuery = appDrawerViewModel.searchQuery.value,
+                isRefreshing = appDrawerViewModel.isRefreshing.value,
+                onRefresh = { appDrawerViewModel.refreshApps() },
+                onSearchQueryChange = { appDrawerViewModel.searchQuery.value = it },
                 onOpenSettings = { showSettings = true },
-                onToggleFavorite = { viewModel.toggleFavorite(it) },
-                onBlock = { pkg, expiry -> viewModel.blockApp(pkg, expiry) },
-                isFavorite = { viewModel.favoritePackages.contains(it) },
-                showIcons = viewModel.showIcons.value,
-                iconPackPackage = viewModel.iconPackPackage.value
+                onToggleFavorite = { appDrawerViewModel.toggleFavorite(it) },
+                onBlock = { pkg, expiry -> focusModeViewModel.blockApp(pkg, expiry) },
+                isFavorite = { appDrawerViewModel.favoritePackages.contains(it) },
+                showIcons = appDrawerViewModel.showIcons.value,
+                iconPackPackage = appDrawerViewModel.iconPackPackage.value
             )
         }
     }
@@ -180,21 +179,21 @@ fun HomeScreen(viewModel: HomeViewModel) {
     if (showSettings) {
         SettingsDialog(
             onDismiss = { showSettings = false },
-            blockedApps = viewModel.blockedApps,
-            allApps = viewModel.apps,
-            onUnblock = { viewModel.unblockApp(it) },
-            focusModes = viewModel.focusModes,
-            activeFocusModeName = viewModel.activeFocusModeName.value,
-            onToggleFocusMode = { viewModel.toggleFocusMode(it) },
-            onAddFocusMode = { name, pkgs, start, end -> viewModel.addFocusMode(name, pkgs, start, end) },
-            onDeleteFocusMode = { viewModel.deleteFocusMode(it) },
-            fontFamily = viewModel.fontFamily.value,
-            onSetFontFamily = { viewModel.setFontFamily(it) },
-            showIcons = viewModel.showIcons.value,
-            onSetShowIcons = { viewModel.setShowIcons(it) },
-            availableIconPacks = viewModel.availableIconPacks,
-            selectedIconPack = viewModel.iconPackPackage.value,
-            onSetIconPack = { viewModel.setIconPack(it) }
+            blockedApps = focusModeViewModel.blockedApps,
+            allApps = appDrawerViewModel.apps,
+            onUnblock = { focusModeViewModel.unblockApp(it) },
+            focusModes = focusModeViewModel.focusModes,
+            activeFocusModeName = focusModeViewModel.activeFocusModeName.value,
+            onToggleFocusMode = { focusModeViewModel.toggleFocusMode(it) },
+            onAddFocusMode = { name, pkgs, start, end -> focusModeViewModel.addFocusMode(name, pkgs, start, end) },
+            onDeleteFocusMode = { focusModeViewModel.deleteFocusMode(it) },
+            fontFamily = mainViewModel.fontFamily.value,
+            onSetFontFamily = { mainViewModel.setFontFamily(it) },
+            showIcons = appDrawerViewModel.showIcons.value,
+            onSetShowIcons = { appDrawerViewModel.setShowIcons(it) },
+            availableIconPacks = appDrawerViewModel.availableIconPacks,
+            selectedIconPack = appDrawerViewModel.iconPackPackage.value,
+            onSetIconPack = { appDrawerViewModel.setIconPack(it) }
         )
     }
 }
