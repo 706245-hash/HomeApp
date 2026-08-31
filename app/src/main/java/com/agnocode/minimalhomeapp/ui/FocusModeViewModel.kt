@@ -101,9 +101,15 @@ class FocusModeViewModel @Inject constructor(
         saveBlockedApps()
     }
 
-    fun addFocusMode(name: String, allowedPackages: Set<String>, startTime: Int? = null, endTime: Int? = null) {
+    fun addFocusMode(name: String, allowedPackages: Set<String>, startTime: Int? = null, endTime: Int? = null, oldName: String? = null) {
         val newMode = FocusMode(name, allowedPackages, startTime, endTime)
         viewModelScope.launch {
+            if (oldName != null && oldName != name) {
+                repository.deleteFocusMode(oldName)
+                if (activeFocusModeName.value == oldName) {
+                    repository.setActiveFocusMode(name)
+                }
+            }
             repository.saveFocusMode(newMode)
         }
     }

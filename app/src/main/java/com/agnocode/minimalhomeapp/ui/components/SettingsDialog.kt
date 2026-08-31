@@ -3,12 +3,16 @@ package com.agnocode.minimalhomeapp.ui.components
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.provider.Settings
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material3.*
@@ -23,9 +27,12 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import com.agnocode.minimalhomeapp.data.model.AppItem
 import com.agnocode.minimalhomeapp.data.model.FocusMode
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsDialog(
     onDismiss: () -> Unit,
@@ -35,7 +42,7 @@ fun SettingsDialog(
     focusModes: List<FocusMode>,
     activeFocusModeName: String?,
     onToggleFocusMode: (String?) -> Unit,
-    onAddFocusMode: (String, Set<String>, Int?, Int?) -> Unit,
+    onAddFocusMode: (String, Set<String>, Int?, Int?, String?) -> Unit,
     onDeleteFocusMode: (String) -> Unit,
     fontFamily: String,
     onSetFontFamily: (String) -> Unit,
@@ -80,15 +87,43 @@ fun SettingsDialog(
     var focusModesExpanded by remember { mutableStateOf(false) }
     var blockedAppsExpanded by remember { mutableStateOf(false) }
 
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        containerColor = Color.DarkGray,
-        title = { Text("Settings", color = Color.White) },
-        text = {
+    BackHandler {
+        onDismiss()
+    }
+
+    Surface(
+        modifier = Modifier.fillMaxSize(),
+        color = Color.Black
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .safeDrawingPadding()
+        ) {
+            // Top Bar
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 24.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    "Settings",
+                    color = Color.White,
+                    fontSize = 32.sp,
+                    fontWeight = FontWeight.Light
+                )
+                IconButton(onClick = onDismiss) {
+                    Icon(Icons.Default.Close, contentDescription = "Close", tint = Color.White, modifier = Modifier.size(32.dp))
+                }
+            }
+
             LazyColumn(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .heightIn(max = 450.dp)
+                    .weight(1f)
+                    .padding(horizontal = 24.dp)
             ) {
                 // Section: System
                 item {
@@ -102,14 +137,16 @@ fun SettingsDialog(
                 if (systemExpanded) {
                     if (!isDefault) {
                         item {
-                            TextButton(
+                            Button(
                                 onClick = {
                                     val intent = Intent(Settings.ACTION_HOME_SETTINGS)
                                     context.startActivity(intent)
                                 },
-                                modifier = Modifier.fillMaxWidth()
+                                modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+                                colors = ButtonDefaults.buttonColors(containerColor = Color.White, contentColor = Color.Black),
+                                shape = MaterialTheme.shapes.small
                             ) {
-                                Text("Set as Default Launcher", color = Color.White)
+                                Text("Set as Default Launcher", fontWeight = FontWeight.Bold)
                             }
                         }
                     } else {
@@ -118,13 +155,13 @@ fun SettingsDialog(
                                 "App is set as default",
                                 color = Color.Gray,
                                 fontSize = 14.sp,
-                                modifier = Modifier.padding(start = 16.dp, bottom = 8.dp)
+                                modifier = Modifier.padding(start = 32.dp, bottom = 16.dp)
                             )
                         }
                     }
                 }
 
-                item { HorizontalDivider(color = Color.Gray.copy(alpha = 0.3f), modifier = Modifier.padding(vertical = 4.dp)) }
+                item { Divider() }
 
                 // Section: Customization
                 item {
@@ -137,21 +174,20 @@ fun SettingsDialog(
 
                 if (customizationExpanded) {
                     item {
-                        Row(
-                            modifier = Modifier.fillMaxWidth().padding(start = 16.dp),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text("Font Family", color = Color.White, fontSize = 16.sp)
+                        SettingsRow(label = "Font Family") {
                             var showFontMenu by remember { mutableStateOf(false) }
                             Box {
-                                TextButton(onClick = { showFontMenu = true }) {
-                                    Text(fontFamily.replaceFirstChar { it.uppercase() }, color = Color.Gray)
-                                }
+                                Text(
+                                    fontFamily.replaceFirstChar { it.uppercase() },
+                                    color = Color.LightGray,
+                                    modifier = Modifier.clickable { showFontMenu = true }.padding(8.dp)
+                                )
                                 DropdownMenu(
                                     expanded = showFontMenu,
                                     onDismissRequest = { showFontMenu = false },
-                                    modifier = Modifier.background(Color.DarkGray)
+                                    modifier = Modifier
+                                        .background(Color.Black)
+                                        .border(1.dp, Color.White, MaterialTheme.shapes.extraSmall)
                                 ) {
                                     listOf("default", "serif", "monospace", "sans-serif").forEach { font ->
                                         DropdownMenuItem(
@@ -168,18 +204,15 @@ fun SettingsDialog(
                     }
 
                     item {
-                        Row(
-                            modifier = Modifier.fillMaxWidth().padding(start = 16.dp),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text("Show App Icons", color = Color.White, fontSize = 16.sp)
+                        SettingsRow(label = "Show App Icons") {
                             Switch(
                                 checked = showIcons,
                                 onCheckedChange = onSetShowIcons,
                                 colors = SwitchDefaults.colors(
-                                    checkedThumbColor = Color.White,
-                                    checkedTrackColor = Color.Gray
+                                    checkedThumbColor = Color.Black,
+                                    checkedTrackColor = Color.White,
+                                    uncheckedThumbColor = Color.Gray,
+                                    uncheckedTrackColor = Color.DarkGray
                                 )
                             )
                         }
@@ -187,22 +220,21 @@ fun SettingsDialog(
 
                     if (showIcons) {
                         item {
-                            Row(
-                                modifier = Modifier.fillMaxWidth().padding(start = 16.dp),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Text("Icon Pack", color = Color.White, fontSize = 16.sp)
+                            SettingsRow(label = "Icon Pack") {
                                 var showIconMenu by remember { mutableStateOf(false) }
                                 Box {
-                                    TextButton(onClick = { showIconMenu = true }) {
-                                        val label = availableIconPacks.find { it.packageName == selectedIconPack }?.label ?: "Default"
-                                        Text(label, color = Color.Gray)
-                                    }
+                                    val label = availableIconPacks.find { it.packageName == selectedIconPack }?.label ?: "Default"
+                                    Text(
+                                        label,
+                                        color = Color.LightGray,
+                                        modifier = Modifier.clickable { showIconMenu = true }.padding(8.dp)
+                                    )
                                     DropdownMenu(
                                         expanded = showIconMenu,
                                         onDismissRequest = { showIconMenu = false },
-                                        modifier = Modifier.background(Color.DarkGray)
+                                        modifier = Modifier
+                                            .background(Color.Black)
+                                            .border(1.dp, Color.White, MaterialTheme.shapes.extraSmall)
                                     ) {
                                         DropdownMenuItem(
                                             text = { Text("Default", color = Color.White) },
@@ -227,7 +259,7 @@ fun SettingsDialog(
                     }
                 }
 
-                item { HorizontalDivider(color = Color.Gray.copy(alpha = 0.3f), modifier = Modifier.padding(vertical = 4.dp)) }
+                item { Divider() }
 
                 // Section: Focus Modes
                 item {
@@ -236,8 +268,8 @@ fun SettingsDialog(
                         isExpanded = focusModesExpanded,
                         onToggle = { focusModesExpanded = !focusModesExpanded },
                         trailing = {
-                            TextButton(onClick = { showAddFocusMode = true }) {
-                                Text("Add", color = Color.White, fontSize = 12.sp)
+                            IconButton(onClick = { showAddFocusMode = true }) {
+                                Icon(Icons.Default.Add, contentDescription = "Add", tint = Color.White)
                             }
                         }
                     )
@@ -246,51 +278,22 @@ fun SettingsDialog(
                 if (focusModesExpanded) {
                     if (focusModes.isEmpty()) {
                         item {
-                            Text("No focus modes defined", color = Color.Gray, fontSize = 14.sp, modifier = Modifier.padding(start = 16.dp, bottom = 8.dp))
+                            Text("No focus modes defined", color = Color.Gray, fontSize = 14.sp, modifier = Modifier.padding(start = 32.dp, bottom = 16.dp))
                         }
                     } else {
                         items(focusModes) { mode ->
-                            val isActive = activeFocusModeName == mode.name
-                            Column(modifier = Modifier.padding(start = 16.dp, top = 4.dp, bottom = 4.dp)) {
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.SpaceBetween
-                                ) {
-                                    Column(modifier = Modifier.weight(1f)) {
-                                        Text(
-                                            mode.name,
-                                            color = if (isActive) Color.White else Color.Gray,
-                                            fontSize = 16.sp,
-                                            fontWeight = if (isActive) FontWeight.Bold else FontWeight.Normal
-                                        )
-                                        val scheduleText = if (mode.startTime != null && mode.endTime != null) {
-                                            "Schedule: ${formatMinutes(mode.startTime)} - ${formatMinutes(mode.endTime)}"
-                                        } else "Manual"
-                                        Text(
-                                            "${mode.allowedPackages.size} apps • $scheduleText",
-                                            color = Color.DarkGray,
-                                            fontSize = 12.sp
-                                        )
-                                    }
-                                    Row {
-                                        TextButton(onClick = { onToggleFocusMode(if (isActive) null else mode.name) }, contentPadding = PaddingValues(horizontal = 8.dp)) {
-                                            Text(if (isActive) "Off" else "On", color = if (isActive) Color.Red else Color.Green, fontSize = 12.sp)
-                                        }
-                                        TextButton(onClick = { editingMode = mode }, contentPadding = PaddingValues(horizontal = 8.dp)) {
-                                            Text("Edit", color = Color.White, fontSize = 12.sp)
-                                        }
-                                        TextButton(onClick = { onDeleteFocusMode(mode.name) }, contentPadding = PaddingValues(horizontal = 8.dp)) {
-                                            Text("Del", color = Color.DarkGray, fontSize = 12.sp)
-                                        }
-                                    }
-                                }
-                            }
+                            FocusModeItem(
+                                mode = mode,
+                                isActive = activeFocusModeName == mode.name,
+                                onToggle = { onToggleFocusMode(if (activeFocusModeName == mode.name) null else mode.name) },
+                                onEdit = { editingMode = mode },
+                                onDelete = { onDeleteFocusMode(mode.name) }
+                            )
                         }
                     }
                 }
 
-                item { HorizontalDivider(color = Color.Gray.copy(alpha = 0.3f), modifier = Modifier.padding(vertical = 4.dp)) }
+                item { Divider() }
 
                 // Section: Blocked Apps
                 item {
@@ -304,62 +307,41 @@ fun SettingsDialog(
                 if (blockedAppsExpanded) {
                     if (blockedApps.isEmpty()) {
                         item {
-                            Text("No apps blocked", color = Color.Gray, fontSize = 14.sp, modifier = Modifier.padding(start = 16.dp, bottom = 8.dp))
+                            Text("No apps blocked", color = Color.Gray, fontSize = 14.sp, modifier = Modifier.padding(start = 32.dp, bottom = 16.dp))
                         }
                     } else {
                         items(blockedApps.toList()) { (pkg, expiry) ->
                             val app = allApps.find { it.packageName == pkg }
-                            Row(
-                                modifier = Modifier.fillMaxWidth().padding(start = 16.dp, top = 4.dp, bottom = 4.dp),
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.SpaceBetween
-                            ) {
-                                Column(modifier = Modifier.weight(1f)) {
-                                    Text(app?.label ?: pkg, color = Color.White, fontSize = 16.sp)
-                                    val timeLabel = if (expiry == null) "∞" else {
-                                        val remaining = expiry - System.currentTimeMillis()
-                                        if (remaining <= 0) "Expired" else {
-                                            val mins = (remaining / 60000).toInt()
-                                            val hrs = mins / 60
-                                            if (hrs > 0) "${hrs}h ${mins % 60}m" else "${mins}m"
-                                        }
-                                    }
-                                    Text(timeLabel, color = Color.Gray, fontSize = 12.sp)
-                                }
-                                TextButton(onClick = { onUnblock(pkg) }) {
-                                    Text("Unblock", color = Color.Red, fontSize = 12.sp)
-                                }
-                            }
+                            BlockedAppItem(
+                                label = app?.label ?: pkg,
+                                expiry = expiry,
+                                onUnblock = { onUnblock(pkg) }
+                            )
                         }
                     }
                 }
             }
-        },
-        confirmButton = {
-            TextButton(onClick = onDismiss) {
-                Text("Close", color = Color.White)
-            }
         }
-    )
+    }
 
     if (showAddFocusMode) {
-        FocusModeDialog(
+        FocusModePage(
             allApps = allApps,
             onDismiss = { showAddFocusMode = false },
-            onConfirm = { name, pkgs, start, end ->
-                onAddFocusMode(name, pkgs, start, end)
+            onConfirm = { name, pkgs, start, end, oldName ->
+                onAddFocusMode(name, pkgs, start, end, oldName)
                 showAddFocusMode = false
             }
         )
     }
 
     if (editingMode != null) {
-        FocusModeDialog(
+        FocusModePage(
             allApps = allApps,
             existingMode = editingMode,
             onDismiss = { editingMode = null },
-            onConfirm = { name, pkgs, start, end ->
-                onAddFocusMode(name, pkgs, start, end)
+            onConfirm = { name, pkgs, start, end, oldName ->
+                onAddFocusMode(name, pkgs, start, end, oldName)
                 editingMode = null
             }
         )
@@ -367,51 +349,193 @@ fun SettingsDialog(
 }
 
 @Composable
-fun FocusModeDialog(
+fun SettingsRow(label: String, content: @Composable () -> Unit) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(start = 32.dp, top = 8.dp, bottom = 8.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(label, color = Color.White, fontSize = 16.sp)
+        content()
+    }
+}
+
+@Composable
+fun Divider() {
+    HorizontalDivider(color = Color.White.copy(alpha = 0.1f), modifier = Modifier.padding(vertical = 8.dp))
+}
+
+@Composable
+fun FocusModeItem(
+    mode: FocusMode,
+    isActive: Boolean,
+    onToggle: () -> Unit,
+    onEdit: () -> Unit,
+    onDelete: () -> Unit
+) {
+    Column(modifier = Modifier.padding(start = 32.dp, top = 8.dp, bottom = 8.dp)) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    mode.name,
+                    color = if (isActive) Color.White else Color.Gray,
+                    fontSize = 18.sp,
+                    fontWeight = if (isActive) FontWeight.Bold else FontWeight.Normal
+                )
+                val scheduleText = if (mode.startTime != null && mode.endTime != null) {
+                    "${formatMinutes(mode.startTime)} - ${formatMinutes(mode.endTime)}"
+                } else "Manual"
+                Text(
+                    "${mode.allowedPackages.size} apps • $scheduleText",
+                    color = Color.Gray,
+                    fontSize = 12.sp
+                )
+            }
+            Row {
+                TextButton(onClick = onToggle) {
+                    Text(if (isActive) "OFF" else "ON", color = if (isActive) Color.White else Color.Gray, fontWeight = FontWeight.Bold)
+                }
+                TextButton(onClick = onEdit) {
+                    Text("EDIT", color = Color.White)
+                }
+                TextButton(onClick = onDelete) {
+                    // Fixed visibility: White text on black background
+                    Text("DELETE", color = Color.White.copy(alpha = 0.6f))
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun BlockedAppItem(
+    label: String,
+    expiry: Long?,
+    onUnblock: () -> Unit
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(start = 32.dp, top = 8.dp, bottom = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween
+    ) {
+        Column(modifier = Modifier.weight(1f)) {
+            Text(label, color = Color.White, fontSize = 16.sp)
+            val timeLabel = if (expiry == null) "Forever" else {
+                val remaining = expiry - System.currentTimeMillis()
+                if (remaining <= 0) "Expired" else {
+                    val mins = (remaining / 60000).toInt()
+                    val hrs = mins / 60
+                    if (hrs > 0) "${hrs}h ${mins % 60}m remaining" else "${mins}m remaining"
+                }
+            }
+            Text(timeLabel, color = Color.Gray, fontSize = 12.sp)
+        }
+        TextButton(onClick = onUnblock) {
+            Text("UNBLOCK", color = Color.White)
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun FocusModePage(
     allApps: List<AppItem>,
     existingMode: FocusMode? = null,
     onDismiss: () -> Unit,
-    onConfirm: (String, Set<String>, Int?, Int?) -> Unit
+    onConfirm: (String, Set<String>, Int?, Int?, String?) -> Unit
 ) {
     var name by remember { mutableStateOf(existingMode?.name ?: "") }
     val selectedPackages = remember { mutableStateListOf<String>().apply { if (existingMode != null) addAll(existingMode.allowedPackages) } }
     
-    var startH by remember { mutableStateOf(existingMode?.startTime?.let { it / 60 }?.toString() ?: "") }
-    var startM by remember { mutableStateOf(existingMode?.startTime?.let { it % 60 }?.toString() ?: "") }
-    var endH by remember { mutableStateOf(existingMode?.endTime?.let { it / 60 }?.toString() ?: "") }
-    var endM by remember { mutableStateOf(existingMode?.endTime?.let { it % 60 }?.toString() ?: "") }
+    var startTime by remember { mutableStateOf(existingMode?.startTime) }
+    var endTime by remember { mutableStateOf(existingMode?.endTime) }
 
-    AlertDialog(
+    var showStartTimePicker by remember { mutableStateOf(false) }
+    var showEndTimePicker by remember { mutableStateOf(false) }
+
+    BackHandler {
+        onDismiss()
+    }
+
+    Dialog(
         onDismissRequest = onDismiss,
-        containerColor = Color.DarkGray,
-        title = { Text(if (existingMode == null) "New Focus Mode" else "Edit Focus Mode", color = Color.White) },
-        text = {
-            Column {
+        properties = DialogProperties(usePlatformDefaultWidth = false)
+    ) {
+        Surface(
+            modifier = Modifier.fillMaxSize(),
+            color = Color.Black
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .safeDrawingPadding()
+                    .padding(horizontal = 24.dp)
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(vertical = 24.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        if (existingMode == null) "New Focus Mode" else "Edit Mode",
+                        color = Color.White,
+                        fontSize = 24.sp
+                    )
+                    IconButton(onClick = onDismiss) {
+                        Icon(Icons.Default.Close, contentDescription = "Cancel", tint = Color.White)
+                    }
+                }
+
                 OutlinedTextField(
                     value = name,
                     onValueChange = { name = it },
-                    label = { Text("Mode Name") },
+                    label = { Text("Name", color = Color.Gray) },
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth(),
-                    textStyle = androidx.compose.ui.text.TextStyle(color = Color.White),
-                    enabled = existingMode == null // Name is unique ID
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedTextColor = Color.White,
+                        unfocusedTextColor = Color.White,
+                        focusedBorderColor = Color.White,
+                        unfocusedBorderColor = Color.Gray
+                    )
                 )
+
+                Spacer(Modifier.height(24.dp))
+
+                Text("Schedule", color = Color.White, fontWeight = FontWeight.Bold)
                 Spacer(Modifier.height(8.dp))
-                
-                Text("Schedule (24h format, optional):", color = Color.LightGray, fontSize = 12.sp)
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    TimeInput(value = startH, onValueChange = { if (it.length <= 2) startH = it }, placeholder = "HH")
-                    Text(":", color = Color.White)
-                    TimeInput(value = startM, onValueChange = { if (it.length <= 2) startM = it }, placeholder = "MM")
-                    Text(" to ", color = Color.LightGray)
-                    TimeInput(value = endH, onValueChange = { if (it.length <= 2) endH = it }, placeholder = "HH")
-                    Text(":", color = Color.White)
-                    TimeInput(value = endM, onValueChange = { if (it.length <= 2) endM = it }, placeholder = "MM")
+
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                    TimeSelectButton(
+                        label = "Start",
+                        time = startTime,
+                        onClick = { showStartTimePicker = true },
+                        modifier = Modifier.weight(1f)
+                    )
+                    TimeSelectButton(
+                        label = "End",
+                        time = endTime,
+                        onClick = { showEndTimePicker = true },
+                        modifier = Modifier.weight(1f)
+                    )
                 }
                 
-                Spacer(Modifier.height(16.dp))
-                Text("Select Allowed Apps:", color = Color.LightGray, fontWeight = FontWeight.Bold)
-                LazyColumn(modifier = Modifier.height(200.dp)) {
+                if (startTime != null || endTime != null) {
+                    TextButton(onClick = { startTime = null; endTime = null }) {
+                        Text("Clear Schedule", color = Color.Gray, fontSize = 12.sp)
+                    }
+                }
+
+                Spacer(Modifier.height(24.dp))
+
+                Text("Allowed Apps (${selectedPackages.size})", color = Color.White, fontWeight = FontWeight.Bold)
+                LazyColumn(modifier = Modifier.weight(1f).padding(top = 8.dp)) {
                     items(allApps) { app ->
                         val isSelected = selectedPackages.contains(app.packageName)
                         Row(
@@ -421,44 +545,131 @@ fun FocusModeDialog(
                                     if (isSelected) selectedPackages.remove(app.packageName)
                                     else selectedPackages.add(app.packageName)
                                 }
-                                .padding(vertical = 4.dp),
+                                .padding(vertical = 12.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Checkbox(checked = isSelected, onCheckedChange = null)
-                            Text(app.label, color = Color.White, modifier = Modifier.padding(start = 8.dp))
+                            Checkbox(
+                                checked = isSelected,
+                                onCheckedChange = null,
+                                colors = CheckboxDefaults.colors(
+                                    checkedColor = Color.White,
+                                    uncheckedColor = Color.Gray,
+                                    checkmarkColor = Color.Black
+                                )
+                            )
+                            Text(app.label, color = Color.White, modifier = Modifier.padding(start = 16.dp))
                         }
                     }
                 }
-            }
-        },
-        confirmButton = {
-            TextButton(
-                onClick = {
-                    if (name.isNotBlank()) {
-                        val start = startH.toIntOrNull()?.let { h -> startM.toIntOrNull()?.let { m -> h * 60 + m } }
-                        val end = endH.toIntOrNull()?.let { h -> endM.toIntOrNull()?.let { m -> h * 60 + m } }
-                        onConfirm(name, selectedPackages.toSet(), start, end)
-                    }
+
+                Button(
+                    onClick = {
+                        if (name.isNotBlank()) {
+                            onConfirm(name, selectedPackages.toSet(), startTime, endTime, existingMode?.name)
+                        }
+                    },
+                    modifier = Modifier.fillMaxWidth().padding(vertical = 24.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = Color.White, contentColor = Color.Black),
+                    shape = MaterialTheme.shapes.small
+                ) {
+                    Text(if (existingMode == null) "CREATE" else "SAVE", fontWeight = FontWeight.Bold)
                 }
-            ) {
-                Text(if (existingMode == null) "Create" else "Save", color = Color.Green)
             }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) { Text("Cancel", color = Color.White) }
         }
-    )
+    }
+
+    if (showStartTimePicker) {
+        TimePickerDialogWrapper(
+            initialMinutes = startTime ?: 540, // 9:00
+            onDismiss = { showStartTimePicker = false },
+            onConfirm = {
+                startTime = it
+                showStartTimePicker = false
+            }
+        )
+    }
+
+    if (showEndTimePicker) {
+        TimePickerDialogWrapper(
+            initialMinutes = endTime ?: 1020, // 17:00
+            onDismiss = { showEndTimePicker = false },
+            onConfirm = {
+                endTime = it
+                showEndTimePicker = false
+            }
+        )
+    }
 }
 
 @Composable
-fun TimeInput(value: String, onValueChange: (String) -> Unit, placeholder: String) {
-    OutlinedTextField(
-        value = value,
-        onValueChange = onValueChange,
-        placeholder = { Text(placeholder, color = Color.DarkGray, fontSize = 12.sp) },
-        modifier = Modifier.width(60.dp).padding(2.dp),
-        textStyle = androidx.compose.ui.text.TextStyle(color = Color.White, fontSize = 12.sp),
-        singleLine = true
+fun TimeSelectButton(label: String, time: Int?, onClick: () -> Unit, modifier: Modifier = Modifier) {
+    Column(modifier = modifier) {
+        Text(label, color = Color.Gray, fontSize = 12.sp)
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable { onClick() }
+                .background(Color.White.copy(alpha = 0.05f))
+                .padding(12.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                text = time?.let { formatMinutes(it) } ?: "--:--",
+                color = Color.White,
+                fontSize = 18.sp,
+                fontWeight = FontWeight.Medium
+            )
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun TimePickerDialogWrapper(
+    initialMinutes: Int,
+    onDismiss: () -> Unit,
+    onConfirm: (Int) -> Unit
+) {
+    val state = rememberTimePickerState(
+        initialHour = initialMinutes / 60,
+        initialMinute = initialMinutes % 60,
+        is24Hour = true
+    )
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        confirmButton = {
+            TextButton(onClick = { onConfirm(state.hour * 60 + state.minute) }) {
+                Text("OK", color = Color.White)
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Cancel", color = Color.Gray)
+            }
+        },
+        containerColor = Color.Black,
+        title = { Text("Select Time", color = Color.White) },
+        text = {
+            TimePicker(
+                state = state,
+                colors = TimePickerDefaults.colors(
+                    clockDialColor = Color.DarkGray,
+                    clockDialSelectedContentColor = Color.Black,
+                    clockDialUnselectedContentColor = Color.White,
+                    selectorColor = Color.White,
+                    periodSelectorBorderColor = Color.White,
+                    periodSelectorSelectedContainerColor = Color.White,
+                    periodSelectorUnselectedContainerColor = Color.Black,
+                    periodSelectorSelectedContentColor = Color.Black,
+                    periodSelectorUnselectedContentColor = Color.White,
+                    timeSelectorSelectedContainerColor = Color.White,
+                    timeSelectorUnselectedContainerColor = Color.DarkGray,
+                    timeSelectorSelectedContentColor = Color.Black,
+                    timeSelectorUnselectedContentColor = Color.White
+                )
+            )
+        }
     )
 }
 
@@ -479,7 +690,7 @@ fun SettingsSectionHeader(
         modifier = Modifier
             .fillMaxWidth()
             .clickable { onToggle() }
-            .padding(vertical = 8.dp),
+            .padding(vertical = 16.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
@@ -488,14 +699,14 @@ fun SettingsSectionHeader(
                 imageVector = if (isExpanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
                 contentDescription = if (isExpanded) "Collapse" else "Expand",
                 tint = Color.Gray,
-                modifier = Modifier.size(24.dp)
+                modifier = Modifier.size(28.dp)
             )
-            Spacer(Modifier.width(8.dp))
+            Spacer(Modifier.width(12.dp))
             Text(
                 text = title,
-                color = Color.LightGray,
-                fontWeight = FontWeight.Bold,
-                fontSize = 16.sp
+                color = Color.White,
+                fontWeight = FontWeight.Light,
+                fontSize = 20.sp
             )
         }
         trailing?.invoke()

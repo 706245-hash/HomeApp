@@ -1,6 +1,7 @@
 package com.agnocode.minimalhomeapp.ui.components
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -73,7 +74,9 @@ fun NotesView(
                     DropdownMenu(
                         expanded = showHistoryMenu,
                         onDismissRequest = { showHistoryMenu = false },
-                        modifier = Modifier.background(Color.DarkGray)
+                        modifier = Modifier
+                            .background(Color.Black)
+                            .border(1.dp, Color.White, MaterialTheme.shapes.extraSmall)
                     ) {
                         availableDates.forEach { d ->
                             DropdownMenuItem(

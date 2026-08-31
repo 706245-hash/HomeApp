@@ -185,7 +185,7 @@ fun HomeScreen(
             focusModes = focusModeViewModel.focusModes,
             activeFocusModeName = focusModeViewModel.activeFocusModeName.value,
             onToggleFocusMode = { focusModeViewModel.toggleFocusMode(it) },
-            onAddFocusMode = { name, pkgs, start, end -> focusModeViewModel.addFocusMode(name, pkgs, start, end) },
+            onAddFocusMode = { name, pkgs, start, end, oldName -> focusModeViewModel.addFocusMode(name, pkgs, start, end, oldName) },
             onDeleteFocusMode = { focusModeViewModel.deleteFocusMode(it) },
             fontFamily = mainViewModel.fontFamily.value,
             onSetFontFamily = { mainViewModel.setFontFamily(it) },

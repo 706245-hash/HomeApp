@@ -76,10 +76,10 @@
       </SelectionState>
       <SelectionState runConfigName="androidTest">
         <option name="selectionMode" value="DROPDOWN" />
-        <DropdownSelection timestamp="2026-08-31T16:23:48.938837483Z">
+        <DropdownSelection timestamp="2026-08-31T21:07:33.558417765Z">
           <Target type="DEFAULT_BOOT">
             <handle>
-              <DeviceId pluginId="LocalEmulator" identifier="path=/home/agnocode/.android/avd/Medium_Phone.avd" />
+              <DeviceId pluginId="PhysicalDevice" identifier="serial=ZY22DP577T" />
             </handle>
           </Target>
         </DropdownSelection>
