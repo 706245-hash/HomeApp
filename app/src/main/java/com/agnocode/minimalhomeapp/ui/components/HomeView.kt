@@ -4,23 +4,28 @@ import android.content.Intent
 import android.net.Uri
 import android.provider.AlarmClock
 import android.util.Log
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Call
 import androidx.compose.material.icons.filled.PhotoCamera
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.Text
+import androidx.compose.material.icons.filled.Search
+import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -29,6 +34,12 @@ import kotlinx.coroutines.delay
 import java.text.SimpleDateFormat
 import java.util.*
 import kotlin.time.Duration.Companion.milliseconds
+import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.ui.text.input.ImeAction
 
 private val timeFmt = SimpleDateFormat("HH:mm:ss", Locale.getDefault())
 private val dateFmt = SimpleDateFormat("EEEE, d MMMM", Locale.getDefault())
@@ -36,11 +47,34 @@ private val dateFmt = SimpleDateFormat("EEEE, d MMMM", Locale.getDefault())
 @Composable
 fun HomeView(
     favorites: List<AppItem>,
+    searchResults: List<AppItem>,
+    isSearchActive: Boolean,
+    searchQuery: String,
+    tasksCount: Int,
+    onSearchQueryChange: (String) -> Unit,
+    onSearchToggle: (Boolean) -> Unit,
     onRemoveFavorite: (String) -> Unit,
-    onBlock: (String, Long?) -> Unit
+    onBlock: (String, Long?) -> Unit,
+    showIcons: Boolean = false,
+    iconPackPackage: String? = null
 ) {
     var time by remember { mutableStateOf(currentTime()) }
+    var showDashboard by remember { mutableStateOf(false) }
     val context = LocalContext.current
+    val focusRequester = remember { FocusRequester() }
+    
+    if (isSearchActive) {
+        BackHandler {
+            onSearchToggle(false)
+            onSearchQueryChange("")
+        }
+    }
+
+    LaunchedEffect(isSearchActive) {
+        if (isSearchActive) {
+            focusRequester.requestFocus()
+        }
+    }
     
     fun expandNotifications() {
         try {
@@ -64,16 +98,18 @@ fun HomeView(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .pointerInput(Unit) {
+            .pointerInput(isSearchActive) {
                 detectVerticalDragGestures { _, dragAmount ->
                     if (dragAmount > 20f) {
-                        expandNotifications()
+                        if (isSearchActive) {
+                            onSearchToggle(false)
+                            onSearchQueryChange("")
+                        } else {
+                            expandNotifications()
+                        }
                     } else if (dragAmount < -20f) {
-                        try {
-                            val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://google.com"))
-                            context.startActivity(intent)
-                        } catch (e: Exception) {
-                            Log.e("HomeApp", "Could not open browser", e)
+                        if (!isSearchActive) {
+                            onSearchToggle(true)
                         }
                     }
                 }
@@ -85,107 +121,242 @@ fun HomeView(
                 .safeDrawingPadding()
                 .padding(horizontal = 24.dp)
         ) {
-            Spacer(Modifier.height(80.dp))
+            if (!isSearchActive) {
+                Spacer(Modifier.height(80.dp))
 
-            Column(
-                modifier = Modifier.clickable(
-                    interactionSource = remember { MutableInteractionSource() },
-                    indication = null
+                Column(
+                    modifier = Modifier.clickable(
+                        interactionSource = remember { MutableInteractionSource() },
+                        indication = null
+                    ) {
+                        try {
+                            val intent = Intent(AlarmClock.ACTION_SHOW_ALARMS)
+                            context.startActivity(intent)
+                        } catch (e: Exception) {
+                            Log.e("HomeApp", "Could not open clock app", e)
+                        }
+                    }
                 ) {
-                    try {
-                        val intent = Intent(AlarmClock.ACTION_SHOW_ALARMS)
-                        context.startActivity(intent)
-                    } catch (e: Exception) {
-                        Log.e("HomeApp", "Could not open clock app", e)
+                    Text(
+                        text = time.first,
+                        color = Color.White,
+                        fontSize = 64.sp,
+                        fontWeight = FontWeight.Light
+                    )
+                    Text(
+                        text = time.second,
+                        color = Color.Gray,
+                        fontSize = 18.sp
+                    )
+                }
+
+                if (tasksCount > 0) {
+                    Spacer(Modifier.height(16.dp))
+                    Text(
+                        text = "$tasksCount tasks remaining",
+                        color = Color.LightGray,
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Medium
+                    )
+                }
+
+                Spacer(Modifier.height(64.dp))
+
+                if (favorites.isNotEmpty()) {
+                    Text(
+                        text = "Favorites",
+                        color = Color.DarkGray,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.padding(bottom = 8.dp)
+                    )
+
+                    favorites.forEach { app ->
+                        AppListItem(
+                            app = app,
+                            isFavorite = true,
+                            onToggleFavorite = { onRemoveFavorite(app.packageName) },
+                            onBlock = { duration -> onBlock(app.packageName, duration) },
+                            showIcon = showIcons,
+                            iconPackPackage = iconPackPackage
+                        )
                     }
                 }
-            ) {
-                Text(
-                    text = time.first,
-                    color = Color.White,
-                    fontSize = 64.sp,
-                    fontWeight = FontWeight.Light
+            } else {
+                // Universal Search UI
+                Spacer(Modifier.height(32.dp))
+                
+                BasicTextField(
+                    value = searchQuery,
+                    onValueChange = onSearchQueryChange,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .focusRequester(focusRequester),
+                    textStyle = TextStyle(
+                        color = Color.White,
+                        fontSize = 24.sp
+                    ),
+                    cursorBrush = SolidColor(Color.White),
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+                    decorationBox = { innerTextField ->
+                        Box {
+                            if (searchQuery.isEmpty()) {
+                                Text(
+                                    "Search anything...",
+                                    color = Color.DarkGray,
+                                    fontSize = 24.sp
+                                )
+                            }
+                            innerTextField()
+                        }
+                    }
                 )
-                Text(
-                    text = time.second,
-                    color = Color.Gray,
-                    fontSize = 18.sp
-                )
+                
+                Spacer(Modifier.height(16.dp))
+                
+                LazyColumn(modifier = Modifier.weight(1f)) {
+                    items(searchResults) { app ->
+                        AppListItem(
+                            app = app,
+                            isFavorite = false,
+                            onToggleFavorite = {}, // Not needed here
+                            onBlock = { duration -> onBlock(app.packageName, duration) },
+                            showIcon = showIcons,
+                            iconPackPackage = iconPackPackage
+                        )
+                    }
+                    
+                    if (searchQuery.isNotEmpty()) {
+                        item {
+                            Text(
+                                text = "Search web for \"$searchQuery\"",
+                                color = Color.LightGray,
+                                fontSize = 16.sp,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clickable {
+                                        try {
+                                            val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://google.com/search?q=$searchQuery"))
+                                            context.startActivity(intent)
+                                            onSearchToggle(false)
+                                            onSearchQueryChange("")
+                                        } catch (e: Exception) {
+                                            Log.e("HomeApp", "Could not open browser", e)
+                                        }
+                                    }
+                                    .padding(vertical = 12.dp)
+                            )
+                        }
+                    }
+                }
             }
+        }
 
-            Spacer(Modifier.height(64.dp))
-
-            if (favorites.isNotEmpty()) {
-                Text(
-                    text = "Favorites",
-                    color = Color.DarkGray,
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier.padding(bottom = 8.dp)
-                )
-
-                favorites.forEach { app ->
-                    AppListItem(
-                        app = app,
-                        isFavorite = true,
-                        onToggleFavorite = { onRemoveFavorite(app.packageName) },
-                        onBlock = { duration -> onBlock(app.packageName, duration) }
+        if (!isSearchActive) {
+            Row(
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .safeDrawingPadding()
+                    .fillMaxWidth()
+                    .padding(start = 24.dp, end = 24.dp, bottom = 48.dp),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                IconButton(onClick = {
+                    val intent = Intent(Intent.ACTION_DIAL)
+                    context.startActivity(intent)
+                }) {
+                    Icon(
+                        imageVector = Icons.Default.Call,
+                        contentDescription = "Phone",
+                        tint = Color.DarkGray
+                    )
+                }
+                IconButton(onClick = {
+                    val intent = Intent("android.media.action.STILL_IMAGE_CAMERA")
+                    context.startActivity(intent)
+                }) {
+                    Icon(
+                        imageVector = Icons.Default.PhotoCamera,
+                        contentDescription = "Camera",
+                        tint = Color.DarkGray
                     )
                 }
             }
-        }
 
-        Row(
-            modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .safeDrawingPadding()
-                .fillMaxWidth()
-                .padding(start = 24.dp, end = 24.dp, bottom = 48.dp),
-            horizontalArrangement = Arrangement.SpaceBetween
-        ) {
-            IconButton(onClick = {
-                val intent = Intent(Intent.ACTION_DIAL)
-                context.startActivity(intent)
-            }) {
-                Icon(
-                    imageVector = Icons.Default.Call,
-                    contentDescription = "Phone",
-                    tint = Color.DarkGray
-                )
-            }
-            IconButton(onClick = {
-                val intent = Intent("android.media.action.STILL_IMAGE_CAMERA")
-                context.startActivity(intent)
-            }) {
-                Icon(
-                    imageVector = Icons.Default.PhotoCamera,
-                    contentDescription = "Camera",
-                    tint = Color.DarkGray
-                )
-            }
-        }
-
-        YearProgressBar(
-            modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .safeDrawingPadding()
-                .padding(start = 24.dp, end = 24.dp, bottom = 24.dp)
-                .clickable(
-                    interactionSource = remember { MutableInteractionSource() },
-                    indication = null
-                ) {
-                    try {
-                        val intent = Intent(Intent.ACTION_MAIN).apply {
-                            addCategory(Intent.CATEGORY_APP_CALENDAR)
-                            flags = Intent.FLAG_ACTIVITY_NEW_TASK
+            YearProgressBar(
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .safeDrawingPadding()
+                    .padding(start = 24.dp, end = 24.dp, bottom = 24.dp)
+                    .combinedClickable(
+                        interactionSource = remember { MutableInteractionSource() },
+                        indication = null,
+                        onClick = {
+                            try {
+                                val intent = Intent(Intent.ACTION_MAIN).apply {
+                                    addCategory(Intent.CATEGORY_APP_CALENDAR)
+                                    flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                                }
+                                context.startActivity(intent)
+                            } catch (e: Exception) {
+                                Log.e("HomeApp", "Could not open calendar app", e)
+                            }
+                        },
+                        onLongClick = {
+                            showDashboard = true
                         }
-                        context.startActivity(intent)
-                    } catch (e: Exception) {
-                        Log.e("HomeApp", "Could not open calendar app", e)
-                    }
-                }
-        )
+                    )
+            )
+
+            if (showDashboard) {
+                YearDashboard(onDismiss = { showDashboard = false })
+            }
+        }
     }
+}
+
+@Composable
+fun YearDashboard(onDismiss: () -> Unit) {
+    val calendar = Calendar.getInstance()
+    val dayOfYear = calendar.get(Calendar.DAY_OF_YEAR)
+    val totalDays = calendar.getActualMaximum(Calendar.DAY_OF_YEAR)
+    val daysLeft = totalDays - dayOfYear
+    val progress = (dayOfYear.toFloat() / totalDays * 100).toInt()
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        containerColor = Color.Black.copy(alpha = 0.9f),
+        title = {
+            Text(
+                text = "${calendar.get(Calendar.YEAR)} Overview",
+                color = Color.White,
+                fontSize = 20.sp,
+                fontWeight = FontWeight.Bold
+            )
+        },
+        text = {
+            Column {
+                Text(
+                    text = "You have lived $progress% of this year.",
+                    color = Color.LightGray,
+                    fontSize = 16.sp
+                )
+                Spacer(Modifier.height(8.dp))
+                Text(
+                    text = "$daysLeft days remaining to make it count.",
+                    color = Color.White,
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Medium
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Close", color = Color.Gray)
+            }
+        }
+    )
 }
 
 @Composable
