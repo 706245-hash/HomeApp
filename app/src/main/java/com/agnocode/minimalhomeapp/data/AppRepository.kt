@@ -31,7 +31,6 @@ class AppRepository @Inject constructor(
     val favoriteAppsFlow: Flow<Set<String>?> = prefs.favoriteAppsFlow
     val blockedAppsFlow: Flow<Map<String, Long?>> = prefs.blockedAppsFlow
     val activeFocusModeFlow: Flow<String?> = prefs.activeFocusModeFlow
-    val fontFamilyFlow: Flow<String> = prefs.fontFamilyFlow
     val iconPackPackageFlow: Flow<String?> = prefs.iconPackPackageFlow
     val showIconsFlow: Flow<Boolean> = prefs.showIconsFlow
     val favoritesInitializedFlow: Flow<Boolean> = prefs.favoritesInitializedFlow
@@ -149,10 +148,6 @@ class AppRepository @Inject constructor(
 
     suspend fun setActiveFocusMode(name: String?) {
         prefs.setActiveFocusMode(name)
-    }
-
-    suspend fun saveFontFamily(fontFamily: String) {
-        prefs.saveFontFamily(fontFamily)
     }
 
     suspend fun saveIconPackPackage(packageName: String?) {

@@ -20,7 +20,6 @@ class PreferenceManager(private val context: Context) {
         val BLOCKED_EXPIRY = stringPreferencesKey("blocked_expiry") // Format: packageName:timestamp
         val FOCUS_MODES = stringSetPreferencesKey("focus_modes") // Format: name|pkg1,pkg2
         val ACTIVE_FOCUS_MODE = stringPreferencesKey("active_focus_mode")
-        val FONT_FAMILY = stringPreferencesKey("font_family")
         val ICON_PACK_PACKAGE = stringPreferencesKey("icon_pack_package")
         val SHOW_ICONS = booleanPreferencesKey("show_icons")
         val DAILY_NOTES = stringPreferencesKey("daily_notes") 
@@ -61,10 +60,6 @@ class PreferenceManager(private val context: Context) {
 
     val activeFocusModeFlow: Flow<String?> = context.dataStore.data.map { preferences ->
         preferences[ACTIVE_FOCUS_MODE]
-    }
-
-    val fontFamilyFlow: Flow<String> = context.dataStore.data.map { preferences ->
-        preferences[FONT_FAMILY] ?: "default"
     }
 
     val iconPackPackageFlow: Flow<String?> = context.dataStore.data.map { preferences ->
@@ -136,12 +131,6 @@ class PreferenceManager(private val context: Context) {
             } else {
                 preferences[ACTIVE_FOCUS_MODE] = name
             }
-        }
-    }
-
-    suspend fun saveFontFamily(fontFamily: String) {
-        context.dataStore.edit { preferences ->
-            preferences[FONT_FAMILY] = fontFamily
         }
     }
 

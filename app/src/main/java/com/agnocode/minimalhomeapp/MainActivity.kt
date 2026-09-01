@@ -75,7 +75,7 @@ fun HomeScreenContainer(
     appDrawerViewModel: AppDrawerViewModel,
     focusModeViewModel: FocusModeViewModel
 ) {
-    MinimalHomeAppTheme(fontFamilyName = mainViewModel.fontFamily.value) {
+    MinimalHomeAppTheme {
         Surface(color = Color.Black) {
             HomeScreen(
                 mainViewModel,
@@ -226,8 +226,6 @@ fun HomeScreen(
             onToggleFocusMode = { focusModeViewModel.toggleFocusMode(it) },
             onAddFocusMode = { name, pkgs, start, end, oldName -> focusModeViewModel.addFocusMode(name, pkgs, start, end, oldName) },
             onDeleteFocusMode = { focusModeViewModel.deleteFocusMode(it) },
-            fontFamily = mainViewModel.fontFamily.value,
-            onSetFontFamily = { mainViewModel.setFontFamily(it) },
             showIcons = appDrawerViewModel.showIcons.value,
             onSetShowIcons = { appDrawerViewModel.setShowIcons(it) },
             availableIconPacks = appDrawerViewModel.availableIconPacks,

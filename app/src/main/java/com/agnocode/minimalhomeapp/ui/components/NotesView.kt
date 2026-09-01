@@ -147,7 +147,15 @@ fun NotesView(
                                 fontSize = 16.sp
                             ),
                             cursorBrush = SolidColor(Color.White),
-                            singleLine = true
+                            singleLine = true,
+                            decorationBox = { innerTextField ->
+                                Box {
+                                    if (task.text.isEmpty()) {
+                                        Text("Type your task here...", color = Color.DarkGray, fontSize = 16.sp)
+                                    }
+                                    innerTextField()
+                                }
+                            }
                         )
                         IconButton(onClick = { onDeleteTask(task.id) }) {
                             Icon(

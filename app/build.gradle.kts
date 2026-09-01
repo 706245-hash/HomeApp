@@ -52,7 +52,6 @@ dependencies {
     implementation(libs.androidx.compose.ui)
     implementation(libs.androidx.compose.ui.graphics)
     implementation(libs.coil.compose)
-    implementation(libs.googlefonts)
     implementation(libs.androidx.compose.ui.tooling.preview)
     implementation(libs.androidx.datastore.preferences)
     implementation(libs.androidx.room.runtime)

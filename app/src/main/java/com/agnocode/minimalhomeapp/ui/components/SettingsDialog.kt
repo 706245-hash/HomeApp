@@ -44,8 +44,6 @@ fun SettingsDialog(
     onToggleFocusMode: (String?) -> Unit,
     onAddFocusMode: (String, Set<String>, Int?, Int?, String?) -> Unit,
     onDeleteFocusMode: (String) -> Unit,
-    fontFamily: String,
-    onSetFontFamily: (String) -> Unit,
     showIcons: Boolean,
     onSetShowIcons: (Boolean) -> Unit,
     availableIconPacks: List<AppItem>,
@@ -82,7 +80,7 @@ fun SettingsDialog(
     var showAddFocusMode by remember { mutableStateOf(false) }
     var editingMode by remember { mutableStateOf<FocusMode?>(null) }
 
-    var systemExpanded by remember { mutableStateOf(!isDefault) }
+    var systemExpanded by remember(isDefault) { mutableStateOf(!isDefault) }
     var customizationExpanded by remember { mutableStateOf(false) }
     var focusModesExpanded by remember { mutableStateOf(false) }
     var blockedAppsExpanded by remember { mutableStateOf(false) }
@@ -169,48 +167,6 @@ fun SettingsDialog(
                 }
 
                 if (customizationExpanded) {
-                    item {
-                        SettingsRow(label = "Font Family") {
-                            var showFontMenu by remember { mutableStateOf(false) }
-                            Box {
-                                val currentFontLabel = when (fontFamily) {
-                                    "inter" -> "Inter"
-                                    "serif" -> "Roboto Slab"
-                                    "monospace" -> "JetBrains Mono"
-                                    else -> "System Default"
-                                }
-                                Text(
-                                    currentFontLabel,
-                                    color = Color.LightGray,
-                                    modifier = Modifier.clickable { showFontMenu = true }.padding(8.dp)
-                                )
-                                DropdownMenu(
-                                    expanded = showFontMenu,
-                                    onDismissRequest = { showFontMenu = false },
-                                    modifier = Modifier
-                                        .background(Color.Black)
-                                        .border(1.dp, Color.White, MaterialTheme.shapes.extraSmall)
-                                ) {
-                                    val fontOptions = listOf(
-                                        "default" to "System Default",
-                                        "inter" to "Inter (Sans)",
-                                        "serif" to "Roboto Slab (Serif)",
-                                        "monospace" to "JetBrains Mono"
-                                    )
-                                    fontOptions.forEach { (id, label) ->
-                                        DropdownMenuItem(
-                                            text = { Text(label, color = Color.White) },
-                                            onClick = {
-                                                onSetFontFamily(id)
-                                                showFontMenu = false
-                                            }
-                                        )
-                                    }
-                                }
-                            }
-                        }
-                    }
-
                     item {
                         SettingsRow(label = "Show App Icons") {
                             Switch(
