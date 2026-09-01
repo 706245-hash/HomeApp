@@ -23,13 +23,12 @@ private val DarkColorScheme = darkColorScheme(
 
 @Composable
 fun MinimalHomeAppTheme(
-    content: @Composable () -> Unit
+    content: @Composable () -> Unit,
 ) {
     val typography = Typography()
-
     MaterialTheme(
         colorScheme = DarkColorScheme,
-        typography = typography
+        typography = typography,
     ) {
         CompositionLocalProvider(LocalTextStyle provides typography.bodyLarge) {
             content()
