@@ -173,8 +173,14 @@ fun SettingsDialog(
                         SettingsRow(label = "Font Family") {
                             var showFontMenu by remember { mutableStateOf(false) }
                             Box {
+                                val currentFontLabel = when (fontFamily) {
+                                    "inter" -> "Inter"
+                                    "serif" -> "Roboto Slab"
+                                    "monospace" -> "JetBrains Mono"
+                                    else -> "System Default"
+                                }
                                 Text(
-                                    fontFamily.replaceFirstChar { it.uppercase() },
+                                    currentFontLabel,
                                     color = Color.LightGray,
                                     modifier = Modifier.clickable { showFontMenu = true }.padding(8.dp)
                                 )
@@ -185,11 +191,17 @@ fun SettingsDialog(
                                         .background(Color.Black)
                                         .border(1.dp, Color.White, MaterialTheme.shapes.extraSmall)
                                 ) {
-                                    listOf("default", "serif", "monospace", "sans-serif").forEach { font ->
+                                    val fontOptions = listOf(
+                                        "default" to "System Default",
+                                        "inter" to "Inter (Sans)",
+                                        "serif" to "Roboto Slab (Serif)",
+                                        "monospace" to "JetBrains Mono"
+                                    )
+                                    fontOptions.forEach { (id, label) ->
                                         DropdownMenuItem(
-                                            text = { Text(font.replaceFirstChar { it.uppercase() }, color = Color.White) },
+                                            text = { Text(label, color = Color.White) },
                                             onClick = {
-                                                onSetFontFamily(font)
+                                                onSetFontFamily(id)
                                                 showFontMenu = false
                                             }
                                         )

@@ -62,9 +62,8 @@ class FocusModeViewModel @Inject constructor(
     private fun collectBlockedApps() {
         viewModelScope.launch {
             blockedAppsFlow.collect { map ->
-                if (blockedApps.isEmpty()) {
-                    blockedApps.putAll(map)
-                }
+                blockedApps.clear()
+                blockedApps.putAll(map)
             }
         }
     }

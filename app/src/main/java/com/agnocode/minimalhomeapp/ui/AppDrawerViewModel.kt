@@ -3,6 +3,7 @@ package com.agnocode.minimalhomeapp.ui
 import android.content.Intent
 import android.content.pm.PackageManager
 import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.core.net.toUri
 import androidx.lifecycle.ViewModel
@@ -28,6 +29,7 @@ class AppDrawerViewModel @Inject constructor(
         private set
 
     val favoritePackages = mutableStateListOf<String>()
+    val blockedApps = mutableStateMapOf<String, Long?>()
     
     var iconPackPackage = mutableStateOf<String?>(null)
     var showIcons = mutableStateOf(false)
@@ -57,6 +59,7 @@ class AppDrawerViewModel @Inject constructor(
         refreshApps()
         collectFavorites()
         collectThemeSettings()
+        collectBlockedApps()
         refreshIconPacks()
     }
 
@@ -117,6 +120,15 @@ class AppDrawerViewModel @Inject constructor(
         }
     }
 
+    private fun collectBlockedApps() {
+        viewModelScope.launch {
+            blockedAppsFlow.collect { map ->
+                blockedApps.clear()
+                blockedApps.putAll(map)
+            }
+        }
+    }
+
     fun toggleFavorite(packageName: String) {
         if (favoritePackages.contains(packageName)) {
             favoritePackages.remove(packageName)
@@ -152,7 +164,7 @@ class AppDrawerViewModel @Inject constructor(
             _apps
         }
         
-        val blocked = blockedAppsFlow.value.keys
+        val blocked = blockedApps.keys
         val filteredByBlock = filteredByMode.filter { it.packageName !in blocked }
         
         return if (searchQuery.value.isEmpty()) {

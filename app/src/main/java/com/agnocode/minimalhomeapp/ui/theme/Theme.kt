@@ -1,8 +1,10 @@
 package com.agnocode.minimalhomeapp.ui.theme
 
+import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontFamily
 
@@ -25,15 +27,21 @@ fun MinimalHomeAppTheme(
     content: @Composable () -> Unit
 ) {
     val fontFamily = when (fontFamilyName) {
-        "serif" -> FontFamily.Serif
-        "monospace" -> FontFamily.Monospace
-        "sans-serif" -> FontFamily.SansSerif
+        "serif" -> RobotoSlabFontFamily
+        "monospace" -> JetBrainsMonoFontFamily
+        "inter" -> InterFontFamily
         else -> FontFamily.Default
     }
 
+    val typography = getTypography(fontFamily)
+
     MaterialTheme(
         colorScheme = DarkColorScheme,
-        typography = getTypography(fontFamily),
-        content = content
-    )
+        typography = typography
+    ) {
+        CompositionLocalProvider(
+            LocalTextStyle provides typography.bodyLarge,
+            content = content
+        )
+    }
 }
