@@ -31,9 +31,8 @@ fun MinimalHomeAppTheme(
         colorScheme = DarkColorScheme,
         typography = typography
     ) {
-        CompositionLocalProvider(
-            LocalTextStyle provides typography.bodyLarge,
-            content = content
-        )
+        CompositionLocalProvider(LocalTextStyle provides typography.bodyLarge) {
+            content()
+        }
     }
 }
