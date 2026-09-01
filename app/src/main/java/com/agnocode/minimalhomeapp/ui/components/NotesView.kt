@@ -105,7 +105,7 @@ fun NotesView(
             value = noteText,
             onValueChange = onNoteTextChange,
             modifier = Modifier.weight(1f).fillMaxWidth(),
-            textStyle = TextStyle(color = Color.White, fontSize = 18.sp),
+            textStyle = LocalTextStyle.current.copy(color = Color.White, fontSize = 18.sp),
             cursorBrush = SolidColor(Color.White),
             decorationBox = { innerTextField ->
                 Box {
@@ -142,7 +142,7 @@ fun NotesView(
                             value = task.text,
                             onValueChange = { onUpdateTaskText(task.id, it) },
                             modifier = Modifier.weight(1f).padding(start = 8.dp),
-                            textStyle = TextStyle(
+                            textStyle = LocalTextStyle.current.copy(
                                 color = if (task.isChecked) Color.Gray else Color.White,
                                 fontSize = 16.sp
                             ),

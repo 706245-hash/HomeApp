@@ -2,11 +2,16 @@ package com.agnocode.minimalhomeapp.data.local.dao
 
 import androidx.room.*
 import com.agnocode.minimalhomeapp.data.local.entities.NoteEntity
+import com.agnocode.minimalhomeapp.data.local.entities.NoteWithTasks
 import com.agnocode.minimalhomeapp.data.local.entities.TaskEntity
 import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface NoteDao {
+    @Transaction
+    @Query("SELECT * FROM notes ORDER BY date DESC")
+    fun getAllNotesWithTasks(): Flow<List<NoteWithTasks>>
+
     @Query("SELECT * FROM notes ORDER BY date DESC")
     fun getAllNotes(): Flow<List<NoteEntity>>
 

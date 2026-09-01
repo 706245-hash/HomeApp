@@ -18,7 +18,9 @@ import androidx.compose.material3.Surface
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontFamily
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.agnocode.minimalhomeapp.ui.AppDrawerViewModel
 import com.agnocode.minimalhomeapp.ui.FocusModeViewModel
@@ -29,7 +31,9 @@ import com.agnocode.minimalhomeapp.ui.components.HomeView
 import com.agnocode.minimalhomeapp.ui.components.NotesView
 import com.agnocode.minimalhomeapp.ui.components.SettingsDialog
 import com.agnocode.minimalhomeapp.ui.theme.MinimalHomeAppTheme
+import com.agnocode.minimalhomeapp.util.isFuzzyMatch
 import dagger.hilt.android.AndroidEntryPoint
+import android.net.Uri
 import kotlinx.coroutines.launch
 
 @AndroidEntryPoint
@@ -90,9 +94,10 @@ fun HomeScreen(
     appDrawerViewModel: AppDrawerViewModel,
     focusModeViewModel: FocusModeViewModel
 ) {
-    val context = android.view.ContextThemeWrapper(androidx.compose.ui.platform.LocalContext.current, 0)
+    val context = LocalContext.current
+    val themeContext = android.view.ContextThemeWrapper(context, 0)
 
-    DisposableEffect(context) {
+    DisposableEffect(themeContext) {
         val receiver = object : BroadcastReceiver() {
             override fun onReceive(context: Context?, intent: Intent?) {
                 Log.d("HomeApp", "Package change detected: ${intent?.action}")
@@ -109,13 +114,13 @@ fun HomeScreen(
         }
         
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            context.registerReceiver(receiver, filter, Context.RECEIVER_EXPORTED)
+            themeContext.registerReceiver(receiver, filter, Context.RECEIVER_EXPORTED)
         } else {
-            context.registerReceiver(receiver, filter)
+            themeContext.registerReceiver(receiver, filter)
         }
 
         onDispose {
-            context.unregisterReceiver(receiver)
+            themeContext.unregisterReceiver(receiver)
         }
     }
 
@@ -141,7 +146,12 @@ fun HomeScreen(
         }
     }
 
-    val activeFocusMode = focusModeViewModel.focusModes.find { it.name == focusModeViewModel.activeFocusModeName.value }
+    val visibleApps by appDrawerViewModel.visibleAppsFlow.collectAsStateWithLifecycle()
+    val favorites by appDrawerViewModel.favoritesFlow.collectAsStateWithLifecycle()
+    val searchQuery by appDrawerViewModel.searchQuery.collectAsStateWithLifecycle()
+    val universalSearchQuery by mainViewModel.universalSearchQuery.collectAsStateWithLifecycle()
+    val allApps by appDrawerViewModel.apps.collectAsStateWithLifecycle()
+    val blockedApps by focusModeViewModel.blockedAppsFlow.collectAsStateWithLifecycle()
 
     HorizontalPager(
         state = pagerState,
@@ -160,22 +170,38 @@ fun HomeScreen(
                 onToggleTask = { id, checked -> notesViewModel.toggleTask(id, checked) },
                 onDeleteTask = { notesViewModel.deleteTask(it) }
             )
-            1 -> HomeView(
-                favorites = appDrawerViewModel.getVisibleApps(activeFocusMode?.allowedPackages).filter { it.packageName in appDrawerViewModel.favoritePackages },
-                searchResults = appDrawerViewModel.apps.filter { it.label.contains(mainViewModel.universalSearchQuery.value, ignoreCase = true) && it.packageName !in focusModeViewModel.blockedApps }.take(5),
-                isSearchActive = mainViewModel.isUniversalSearchActive.value,
-                searchQuery = mainViewModel.universalSearchQuery.value,
-                tasksCount = notesViewModel.currentTasks.count { !it.isChecked },
-                onSearchQueryChange = { mainViewModel.universalSearchQuery.value = it },
-                onSearchToggle = { mainViewModel.isUniversalSearchActive.value = it },
-                onRemoveFavorite = { appDrawerViewModel.toggleFavorite(it) },
-                onBlock = { pkg, expiry -> focusModeViewModel.blockApp(pkg, expiry) },
-                showIcons = appDrawerViewModel.showIcons.value,
-                iconPackPackage = appDrawerViewModel.iconPackPackage.value
-            )
+            1 -> {
+                val results = allApps.filter { it.label.isFuzzyMatch(universalSearchQuery) && it.packageName !in blockedApps.keys }.take(5)
+                HomeView(
+                    favorites = favorites,
+                    searchResults = results,
+                    isSearchActive = mainViewModel.isUniversalSearchActive.value,
+                    searchQuery = universalSearchQuery,
+                    tasksCount = notesViewModel.currentTasks.count { !it.isChecked },
+                    onSearchQueryChange = { mainViewModel.universalSearchQuery.value = it },
+                    onSearchToggle = { mainViewModel.isUniversalSearchActive.value = it },
+                    onRemoveFavorite = { appDrawerViewModel.toggleFavorite(it) },
+                    onBlock = { pkg, expiry -> focusModeViewModel.blockApp(pkg, expiry) },
+                    onSearch = {
+                        if (results.isNotEmpty()) {
+                            val intent = context.packageManager.getLaunchIntentForPackage(results[0].packageName)
+                            intent?.let { context.startActivity(it) }
+                            mainViewModel.isUniversalSearchActive.value = false
+                            mainViewModel.universalSearchQuery.value = ""
+                        } else if (universalSearchQuery.isNotBlank()) {
+                            val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://google.com/search?q=$universalSearchQuery"))
+                            context.startActivity(intent)
+                            mainViewModel.isUniversalSearchActive.value = false
+                            mainViewModel.universalSearchQuery.value = ""
+                        }
+                    },
+                    showIcons = appDrawerViewModel.showIcons.value,
+                    iconPackPackage = appDrawerViewModel.iconPackPackage.value
+                )
+            }
             2 -> AppDrawerView(
-                apps = appDrawerViewModel.getVisibleApps(activeFocusMode?.allowedPackages),
-                searchQuery = appDrawerViewModel.searchQuery.value,
+                apps = visibleApps,
+                searchQuery = searchQuery,
                 isRefreshing = appDrawerViewModel.isRefreshing.value,
                 onRefresh = { appDrawerViewModel.refreshApps() },
                 onSearchQueryChange = { appDrawerViewModel.searchQuery.value = it },
@@ -192,8 +218,8 @@ fun HomeScreen(
     if (showSettings) {
         SettingsDialog(
             onDismiss = { showSettings = false },
-            blockedApps = focusModeViewModel.blockedApps,
-            allApps = appDrawerViewModel.apps,
+            blockedApps = blockedApps,
+            allApps = allApps,
             onUnblock = { focusModeViewModel.unblockApp(it) },
             focusModes = focusModeViewModel.focusModes,
             activeFocusModeName = focusModeViewModel.activeFocusModeName.value,

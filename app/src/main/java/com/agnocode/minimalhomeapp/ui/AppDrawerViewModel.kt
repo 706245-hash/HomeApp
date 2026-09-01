@@ -10,7 +10,9 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.agnocode.minimalhomeapp.data.AppRepository
 import com.agnocode.minimalhomeapp.data.model.AppItem
+import com.agnocode.minimalhomeapp.util.isFuzzyMatch
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
@@ -22,8 +24,8 @@ class AppDrawerViewModel @Inject constructor(
     private val pm: PackageManager
 ) : ViewModel() {
 
-    private val _apps = mutableStateListOf<AppItem>()
-    val apps: List<AppItem> = _apps
+    private val _apps = MutableStateFlow<List<AppItem>>(emptyList())
+    val apps: StateFlow<List<AppItem>> = _apps.asStateFlow()
 
     var isRefreshing = mutableStateOf(false)
         private set
@@ -35,7 +37,7 @@ class AppDrawerViewModel @Inject constructor(
     var showIcons = mutableStateOf(false)
 
     val availableIconPacks = mutableStateListOf<AppItem>()
-    var searchQuery = mutableStateOf("")
+    val searchQuery = MutableStateFlow("")
 
     val favoriteAppsFlow: StateFlow<Set<String>?> = repository.favoriteAppsFlow.stateIn(
         viewModelScope, SharingStarted.WhileSubscribed(5000), null
@@ -49,11 +51,55 @@ class AppDrawerViewModel @Inject constructor(
         viewModelScope, SharingStarted.WhileSubscribed(5000), false
     )
 
-    // Bridge with FocusMode (We might need a way to filter based on active mode)
-    // For now, we'll keep it simple and just listen to blocked apps
     val blockedAppsFlow: StateFlow<Map<String, Long?>> = repository.blockedAppsFlow.stateIn(
         viewModelScope, SharingStarted.WhileSubscribed(5000), emptyMap()
     )
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    private val activeAllowedPackagesFlow: StateFlow<Set<String>?> = repository.activeFocusModeFlow
+        .flatMapLatest { name ->
+            if (name == null) flowOf(null)
+            else repository.focusModesFlow.map { modes ->
+                modes.find { it.name == name }?.allowedPackages
+            }
+        }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
+
+    val visibleAppsFlow: StateFlow<List<AppItem>> = combine(
+        _apps,
+        searchQuery,
+        blockedAppsFlow,
+        activeAllowedPackagesFlow
+    ) { allApps, query, blocked, allowed ->
+        val filteredByMode = if (allowed != null) {
+            allApps.filter { it.packageName in allowed }
+        } else {
+            allApps
+        }
+        
+        val filteredByBlock = filteredByMode.filter { it.packageName !in blocked.keys }
+        
+        if (query.isEmpty()) {
+            filteredByBlock
+        } else {
+            filteredByBlock.filter { it.label.isFuzzyMatch(query) }
+        }
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    val favoritesFlow: StateFlow<List<AppItem>> = combine(
+        _apps,
+        favoriteAppsFlow,
+        blockedAppsFlow,
+        activeAllowedPackagesFlow
+    ) { allApps, favorites, blocked, allowed ->
+        if (favorites == null) return@combine emptyList<AppItem>()
+        val filteredByMode = if (allowed != null) {
+            allApps.filter { it.packageName in allowed }
+        } else {
+            allApps
+        }
+        filteredByMode.filter { it.packageName in favorites && it.packageName !in blocked.keys }
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     init {
         refreshApps()
@@ -66,10 +112,8 @@ class AppDrawerViewModel @Inject constructor(
     fun refreshApps() {
         viewModelScope.launch {
             isRefreshing.value = true
-            // Removed artificial delay for better UX
             val newList = repository.getInstalledApps()
-            _apps.clear()
-            _apps.addAll(newList)
+            _apps.value = newList
             isRefreshing.value = false
         }
     }
@@ -153,24 +197,6 @@ class AppDrawerViewModel @Inject constructor(
     fun setShowIcons(show: Boolean) {
         viewModelScope.launch {
             repository.saveShowIcons(show)
-        }
-    }
-
-    // Logic to filter visible apps, optionally by Focus Mode
-    fun getVisibleApps(allowedPackages: Set<String>? = null): List<AppItem> {
-        val filteredByMode = if (allowedPackages != null) {
-            _apps.filter { it.packageName in allowedPackages }
-        } else {
-            _apps
-        }
-        
-        val blocked = blockedApps.keys
-        val filteredByBlock = filteredByMode.filter { it.packageName !in blocked }
-        
-        return if (searchQuery.value.isEmpty()) {
-            filteredByBlock
-        } else {
-            filteredByBlock.filter { it.label.contains(searchQuery.value, ignoreCase = true) }
         }
     }
 }

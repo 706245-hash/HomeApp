@@ -53,7 +53,7 @@ fun AppDrawerView(
                 value = searchQuery,
                 onValueChange = onSearchQueryChange,
                 modifier = Modifier.weight(1f),
-                textStyle = TextStyle(
+                textStyle = LocalTextStyle.current.copy(
                     color = Color.White,
                     fontSize = 20.sp
                 ),

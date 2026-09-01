@@ -37,21 +37,14 @@ class AppRepository @Inject constructor(
     val favoritesInitializedFlow: Flow<Boolean> = prefs.favoritesInitializedFlow
 
     @OptIn(ExperimentalCoroutinesApi::class)
-    val dailyNotesFlow: Flow<Map<String, DailyNote>> = noteDao.getAllNotes().flatMapLatest { notes ->
-        if (notes.isEmpty()) return@flatMapLatest flowOf(emptyMap<String, DailyNote>())
-        
-        // This is a bit complex for a flow, might be better to simplify
-        // but let's try to keep it reactive.
-        val noteFlows = notes.map { noteEntity ->
-            noteDao.getTasksForNote(noteEntity.date).map { tasks ->
-                noteEntity.date to DailyNote(
-                    date = noteEntity.date,
-                    content = noteEntity.content,
-                    tasks = tasks.map { NoteTask(it.id, it.text, it.isChecked) }
-                )
-            }
+    val dailyNotesFlow: Flow<Map<String, DailyNote>> = noteDao.getAllNotesWithTasks().map { notesWithTasks ->
+        notesWithTasks.associate { noteWithTasks ->
+            noteWithTasks.note.date to DailyNote(
+                date = noteWithTasks.note.date,
+                content = noteWithTasks.note.content,
+                tasks = noteWithTasks.tasks.sortedBy { it.order }.map { NoteTask(it.id, it.text, it.isChecked) }
+            )
         }
-        combine(noteFlows) { it.toMap() }
     }
 
     @OptIn(ExperimentalCoroutinesApi::class)

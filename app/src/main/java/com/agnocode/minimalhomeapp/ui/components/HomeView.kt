@@ -42,6 +42,7 @@ import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.text.input.ImeAction
 
@@ -59,6 +60,7 @@ fun HomeView(
     onSearchToggle: (Boolean) -> Unit,
     onRemoveFavorite: (String) -> Unit,
     onBlock: (String, Long?) -> Unit,
+    onSearch: () -> Unit = {},
     showIcons: Boolean = false,
     iconPackPackage: String? = null
 ) {
@@ -215,13 +217,14 @@ fun HomeView(
                     modifier = Modifier
                         .fillMaxWidth()
                         .focusRequester(focusRequester),
-                    textStyle = TextStyle(
+                    textStyle = LocalTextStyle.current.copy(
                         color = Color.White,
                         fontSize = 24.sp
                     ),
                     cursorBrush = SolidColor(Color.White),
                     singleLine = true,
                     keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+                    keyboardActions = KeyboardActions(onSearch = { onSearch() }),
                     decorationBox = { innerTextField ->
                         Box {
                             if (searchQuery.isEmpty()) {

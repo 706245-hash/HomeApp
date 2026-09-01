@@ -5,7 +5,6 @@ import android.net.Uri
 import android.provider.Settings
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.ExperimentalFoundationApi
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -32,7 +31,10 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.core.graphics.drawable.toBitmap
+import coil.compose.AsyncImage
 import com.agnocode.minimalhomeapp.data.model.AppItem
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
@@ -50,14 +52,18 @@ fun AppListItem(
     var showBlockMenu by remember { mutableStateOf(false) }
     var showCustomBlockDialog by remember { mutableStateOf(false) }
 
-    val appIcon = remember(app.packageName, showIcon, iconPackPackage) {
+    val appIcon by produceState<android.graphics.drawable.Drawable?>(initialValue = null, app.packageName, showIcon) {
         if (showIcon) {
-            try {
-                pm.getApplicationIcon(app.packageName)
-            } catch (e: Exception) {
-                null
+            value = withContext(Dispatchers.IO) {
+                try {
+                    pm.getApplicationIcon(app.packageName)
+                } catch (e: Exception) {
+                    null
+                }
             }
-        } else null
+        } else {
+            value = null
+        }
     }
 
     Box(
@@ -77,8 +83,8 @@ fun AppListItem(
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             if (appIcon != null) {
-                Image(
-                    bitmap = appIcon.toBitmap().asImageBitmap(),
+                AsyncImage(
+                    model = appIcon,
                     contentDescription = null,
                     modifier = Modifier
                         .size(24.dp)

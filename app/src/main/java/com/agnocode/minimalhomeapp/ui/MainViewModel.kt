@@ -15,7 +15,7 @@ class MainViewModel @Inject constructor(
 ) : ViewModel() {
 
     var fontFamily = mutableStateOf("default")
-    var universalSearchQuery = mutableStateOf("")
+    val universalSearchQuery = MutableStateFlow("")
     var isUniversalSearchActive = mutableStateOf(false)
 
     private val _resetToHomeEvent = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
