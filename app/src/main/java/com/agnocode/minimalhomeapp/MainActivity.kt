@@ -19,6 +19,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.font.FontFamily
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -96,6 +97,7 @@ fun HomeScreen(
 ) {
     val context = LocalContext.current
     val themeContext = android.view.ContextThemeWrapper(context, 0)
+    val keyboardController = LocalSoftwareKeyboardController.current
 
     DisposableEffect(themeContext) {
         val receiver = object : BroadcastReceiver() {
@@ -138,6 +140,12 @@ fun HomeScreen(
         }
     }
 
+    LaunchedEffect(pagerState.currentPage) {
+        if (pagerState.currentPage == 1) {
+            keyboardController?.hide()
+        }
+    }
+
     LaunchedEffect(mainViewModel.resetToHomeEvent) {
         mainViewModel.resetToHomeEvent.collect {
             pagerState.animateScrollToPage(1)
@@ -160,15 +168,20 @@ fun HomeScreen(
         when (page) {
             0 -> NotesView(
                 date = notesViewModel.selectedNoteDate.value,
-                availableDates = notesViewModel.getAvailableDates(),
                 noteText = notesViewModel.currentNoteText.value,
                 tasks = notesViewModel.currentTasks,
+                weeklyProductivity = notesViewModel.weeklyProductivity.value,
+                allDailyNotes = notesViewModel.allDailyNotes,
+                isEditingPastNote = notesViewModel.isEditingPastNote.value,
                 onDateSelect = { notesViewModel.selectNoteDate(it) },
                 onNoteTextChange = { notesViewModel.updateNoteText(it) },
                 onAddTask = { notesViewModel.addTask() },
                 onUpdateTaskText = { id, text -> notesViewModel.updateTaskText(id, text) },
                 onToggleTask = { id, checked -> notesViewModel.toggleTask(id, checked) },
-                onDeleteTask = { notesViewModel.deleteTask(it) }
+                onDeleteTask = { notesViewModel.deleteTask(it) },
+                onToggleEditPastNote = { notesViewModel.unlockPastNote() },
+                onSavePastNote = { notesViewModel.saveAndLockPastNote() },
+                onUndoPastNote = { notesViewModel.undoAndLockPastNote() }
             )
             1 -> {
                 val results = allApps.filter { it.label.isFuzzyMatch(universalSearchQuery) && it.packageName !in blockedApps.keys }.take(5)
@@ -209,6 +222,13 @@ fun HomeScreen(
                 onToggleFavorite = { appDrawerViewModel.toggleFavorite(it) },
                 onBlock = { pkg, expiry -> focusModeViewModel.blockApp(pkg, expiry) },
                 isFavorite = { appDrawerViewModel.favoritePackages.contains(it) },
+                onSearch = {
+                    if (visibleApps.isNotEmpty()) {
+                        val intent = context.packageManager.getLaunchIntentForPackage(visibleApps[0].packageName)
+                        intent?.let { context.startActivity(it) }
+                        appDrawerViewModel.searchQuery.value = ""
+                    }
+                },
                 showIcons = appDrawerViewModel.showIcons.value,
                 iconPackPackage = appDrawerViewModel.iconPackPackage.value
             )

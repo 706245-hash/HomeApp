@@ -1,5 +1,6 @@
 package com.agnocode.minimalhomeapp.ui
 
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
@@ -25,15 +26,33 @@ class NotesViewModel @Inject constructor(
     private val dateFmt = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
 
     // allDailyNotes stores the last known state from the database
-    private val allDailyNotes = mutableStateMapOf<String, DailyNote>()
+    val allDailyNotes = mutableStateMapOf<String, DailyNote>()
     
     // UI state
     var selectedNoteDate = mutableStateOf(dateFmt.format(Date()))
     var currentNoteText = mutableStateOf("")
     val currentTasks = mutableStateListOf<NoteTask>()
+    var isEditingPastNote = mutableStateOf(false)
+    private var snapshotNoteText: String = ""
+    private var snapshotTasks: List<NoteTask> = emptyList()
 
     private var saveJob: Job? = null
     private var initialLoadDone = false
+
+    // Statistics for the last 7 days
+    val weeklyProductivity = derivedStateOf {
+        val cal = Calendar.getInstance()
+        (0..6).map { i ->
+            val d = Calendar.getInstance().apply { add(Calendar.DAY_OF_YEAR, -i) }
+            val dateStr = dateFmt.format(d.time)
+            val note = allDailyNotes[dateStr]
+            if (note == null || note.tasks.isEmpty()) 0f
+            else {
+                val done = note.tasks.count { it.isChecked }
+                done.toFloat() / note.tasks.size
+            }
+        }.reversed()
+    }
 
     init {
         collectDailyNotes()
@@ -69,8 +88,29 @@ class NotesViewModel @Inject constructor(
             saveCurrentNoteImmediate()
         }
         
+        isEditingPastNote.value = false
         selectedNoteDate.value = date
         loadSelectedNote()
+    }
+
+    fun unlockPastNote() {
+        snapshotNoteText = currentNoteText.value
+        snapshotTasks = currentTasks.toList()
+        isEditingPastNote.value = true
+    }
+
+    fun saveAndLockPastNote() {
+        saveCurrentNoteImmediate()
+        isEditingPastNote.value = false
+    }
+
+    fun undoAndLockPastNote() {
+        saveJob?.cancel()
+        currentNoteText.value = snapshotNoteText
+        currentTasks.clear()
+        currentTasks.addAll(snapshotTasks)
+        saveCurrentNoteImmediate()
+        isEditingPastNote.value = false
     }
 
     fun updateNoteText(text: String) {

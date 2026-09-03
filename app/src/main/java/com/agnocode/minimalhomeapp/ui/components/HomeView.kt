@@ -178,7 +178,7 @@ fun HomeView(
                 if (tasksCount > 0) {
                     Spacer(Modifier.height(16.dp))
                     Text(
-                        text = "$tasksCount tasks remaining",
+                        text = "$tasksCount task(s) remaining",
                         color = Color.LightGray,
                         fontSize = 14.sp,
                         fontWeight = FontWeight.Medium
