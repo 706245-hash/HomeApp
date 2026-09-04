@@ -60,4 +60,7 @@ interface NoteDao {
 
     @Query("DELETE FROM tasks")
     suspend fun deleteAllTasks()
+
+    @Query("SELECT * FROM notes WHERE content LIKE '%' || :query || '%'")
+    suspend fun searchNotes(query: String): List<NoteEntity>
 }

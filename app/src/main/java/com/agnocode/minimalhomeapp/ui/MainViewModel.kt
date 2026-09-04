@@ -6,6 +6,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.work.*
 import com.agnocode.minimalhomeapp.data.AppRepository
+import com.agnocode.minimalhomeapp.data.local.entities.NoteEntity
 import com.agnocode.minimalhomeapp.data.worker.DailyBackupWorker
 import com.agnocode.minimalhomeapp.util.SearchCommandEngine
 import com.agnocode.minimalhomeapp.util.SmartAction
@@ -15,6 +16,7 @@ import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import java.util.concurrent.TimeUnit
 import javax.inject.Inject
+import kotlin.time.Duration.Companion.milliseconds
 
 @HiltViewModel
 class MainViewModel @Inject constructor(
@@ -24,21 +26,27 @@ class MainViewModel @Inject constructor(
 
     val universalSearchQuery = MutableStateFlow("")
     var isUniversalSearchActive = mutableStateOf(false)
-    var selectedWidget = mutableStateOf("none")
     var showFavorites = mutableStateOf(true)
     var autoSyncEnabled = mutableStateOf(false)
     var autoSyncUri = mutableStateOf<String?>(null)
+    var accentColor = mutableStateOf("white")
+    var monochromeIcons = mutableStateOf(true)
 
     val smartAction: StateFlow<SmartAction?> = universalSearchQuery
         .map { SearchCommandEngine.parse(it) }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
 
+    @OptIn(kotlinx.coroutines.FlowPreview::class, kotlinx.coroutines.ExperimentalCoroutinesApi::class)
+    val noteSearchResults: StateFlow<List<NoteEntity>> = universalSearchQuery
+        .debounce(300.milliseconds)
+        .flatMapLatest { query ->
+            if (query.length < 3) flowOf(emptyList())
+            else flow { emit(repository.searchNotes(query)) }
+        }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
     private val _resetToHomeEvent = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
     val resetToHomeEvent = _resetToHomeEvent.asSharedFlow()
-
-    val selectedWidgetFlow: StateFlow<String> = repository.selectedWidgetFlow.stateIn(
-        viewModelScope, SharingStarted.WhileSubscribed(5000), "none"
-    )
 
     val showFavoritesFlow: StateFlow<Boolean> = repository.showFavoritesFlow.stateIn(
         viewModelScope, SharingStarted.WhileSubscribed(5000), true
@@ -52,6 +60,14 @@ class MainViewModel @Inject constructor(
         viewModelScope, SharingStarted.WhileSubscribed(5000), null
     )
 
+    val accentColorFlow: StateFlow<String> = repository.accentColorFlow.stateIn(
+        viewModelScope, SharingStarted.WhileSubscribed(5000), "white"
+    )
+
+    val monochromeIconsFlow: StateFlow<Boolean> = repository.monochromeIconsFlow.stateIn(
+        viewModelScope, SharingStarted.WhileSubscribed(5000), false
+    )
+
     init {
         collectSettings()
         viewModelScope.launch {
@@ -60,9 +76,6 @@ class MainViewModel @Inject constructor(
     }
 
     private fun collectSettings() {
-        viewModelScope.launch {
-            selectedWidgetFlow.collect { selectedWidget.value = it }
-        }
         viewModelScope.launch {
             showFavoritesFlow.collect { showFavorites.value = it }
         }
@@ -75,11 +88,11 @@ class MainViewModel @Inject constructor(
         viewModelScope.launch {
             autoSyncUriFlow.collect { autoSyncUri.value = it }
         }
-    }
-
-    fun setSelectedWidget(widget: String) {
         viewModelScope.launch {
-            repository.setSelectedWidget(widget)
+            accentColorFlow.collect { accentColor.value = it }
+        }
+        viewModelScope.launch {
+            monochromeIconsFlow.collect { monochromeIcons.value = it }
         }
     }
 
@@ -98,6 +111,18 @@ class MainViewModel @Inject constructor(
     fun setAutoSyncUri(uri: String?) {
         viewModelScope.launch {
             repository.setAutoSyncUri(uri)
+        }
+    }
+
+    fun setAccentColor(color: String) {
+        viewModelScope.launch {
+            repository.setAccentColor(color)
+        }
+    }
+
+    fun setMonochromeIcons(enabled: Boolean) {
+        viewModelScope.launch {
+            repository.setMonochromeIcons(enabled)
         }
     }
 

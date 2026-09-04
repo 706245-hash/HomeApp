@@ -15,6 +15,7 @@ import com.agnocode.minimalhomeapp.data.local.entities.*
 import com.agnocode.minimalhomeapp.data.model.*
 import androidx.sqlite.db.SimpleSQLiteQuery
 import com.google.gson.Gson
+import com.google.gson.annotations.SerializedName
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.*
@@ -56,8 +57,10 @@ class AppRepository @Inject constructor(
     val dndSyncEnabledFlow: Flow<Boolean> = prefs.dndSyncEnabledFlow
     val protectedPackagesFlow: Flow<Set<String>> = prefs.protectedPackagesFlow
     val biometricFocusLockFlow: Flow<Boolean> = prefs.biometricFocusLockFlow
-    val selectedWidgetFlow: Flow<String> = prefs.selectedWidgetFlow
     val showFavoritesFlow: Flow<Boolean> = prefs.showFavoritesFlow
+    val ghostPackagesFlow: Flow<Set<String>> = prefs.ghostPackagesFlow
+    val monochromeIconsFlow: Flow<Boolean> = prefs.monochromeIconsFlow
+    val accentColorFlow: Flow<String> = prefs.accentColorFlow
     val usageAwarenessModeFlow: Flow<String> = prefs.usageAwarenessModeFlow
     val autoSyncEnabledFlow: Flow<Boolean> = prefs.autoSyncEnabledFlow
     val autoSyncUriFlow: Flow<String?> = prefs.autoSyncUriFlow
@@ -216,12 +219,20 @@ class AppRepository @Inject constructor(
         prefs.setBiometricFocusLock(enabled)
     }
 
-    suspend fun setSelectedWidget(widget: String) {
-        prefs.setSelectedWidget(widget)
-    }
-
     suspend fun setShowFavorites(show: Boolean) {
         prefs.setShowFavorites(show)
+    }
+
+    suspend fun saveGhostPackages(packages: Set<String>) {
+        prefs.saveGhostPackages(packages)
+    }
+
+    suspend fun setMonochromeIcons(enabled: Boolean) {
+        prefs.setMonochromeIcons(enabled)
+    }
+
+    suspend fun setAccentColor(color: String) {
+        prefs.setAccentColor(color)
     }
 
     suspend fun setUsageAwarenessMode(mode: String) {
@@ -286,6 +297,10 @@ class AppRepository @Inject constructor(
             Log.e("AppRepository", "Restore failed", e)
             false
         }
+    }
+
+    suspend fun searchNotes(query: String): List<NoteEntity> = withContext(Dispatchers.IO) {
+        noteDao.searchNotes(query)
     }
 
     suspend fun getAvailableIconPacks(): List<AppItem> = withContext(Dispatchers.Default) {

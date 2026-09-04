@@ -40,6 +40,7 @@ class AppDrawerViewModel @Inject constructor(
         private set
 
     val favoritePackages = mutableStateListOf<String>()
+    val ghostPackages = mutableStateListOf<String>()
     val blockedApps = mutableStateMapOf<String, Long?>()
     
     var iconPackPackage = mutableStateOf<String?>(null)
@@ -60,6 +61,10 @@ class AppDrawerViewModel @Inject constructor(
 
     val favoriteAppsFlow: StateFlow<Set<String>?> = repository.favoriteAppsFlow.stateIn(
         viewModelScope, SharingStarted.WhileSubscribed(5000), null
+    )
+
+    val ghostPackagesFlow: StateFlow<Set<String>> = repository.ghostPackagesFlow.stateIn(
+        viewModelScope, SharingStarted.WhileSubscribed(5000), emptySet()
     )
 
     val iconPackPackageFlow: StateFlow<String?> = repository.iconPackPackageFlow.stateIn(
@@ -92,8 +97,9 @@ class AppDrawerViewModel @Inject constructor(
         _apps,
         searchQuery,
         blockedAppsFlow,
-        activeAllowedPackagesFlow
-    ) { allApps, query, blocked, allowed ->
+        activeAllowedPackagesFlow,
+        ghostPackagesFlow
+    ) { allApps, query, blocked, allowed, ghosts ->
         val filteredByMode = if (allowed != null) {
             allApps.filter { it.packageName in allowed }
         } else {
@@ -102,10 +108,17 @@ class AppDrawerViewModel @Inject constructor(
         
         val filteredByBlock = filteredByMode.filter { it.packageName !in blocked.keys }
         
-        if (query.isEmpty()) {
-            filteredByBlock
+        // Filter Ghost apps: Only show if there's a search query
+        val filteredByGhost = if (query.isEmpty()) {
+            filteredByBlock.filter { it.packageName !in ghosts }
         } else {
-            filteredByBlock.filter { it.label.isFuzzyMatch(query) }
+            filteredByBlock
+        }
+        
+        if (query.isEmpty()) {
+            filteredByGhost
+        } else {
+            filteredByGhost.filter { it.label.isFuzzyMatch(query) }
         }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
@@ -127,6 +140,7 @@ class AppDrawerViewModel @Inject constructor(
     init {
         refreshApps()
         collectFavorites()
+        collectGhosts()
         collectThemeSettings()
         collectBlockedApps()
         collectUsageSettings()
@@ -229,6 +243,15 @@ class AppDrawerViewModel @Inject constructor(
         }
     }
 
+    private fun collectGhosts() {
+        viewModelScope.launch {
+            ghostPackagesFlow.collect { set ->
+                ghostPackages.clear()
+                ghostPackages.addAll(set)
+            }
+        }
+    }
+
     private fun setSmartDefaults() {
         val defaults = mutableSetOf<String>()
         pm.resolveActivity(Intent(Intent.ACTION_DIAL), 0)?.activityInfo?.packageName?.let { defaults.add(it) }
@@ -267,6 +290,18 @@ class AppDrawerViewModel @Inject constructor(
             favoritePackages.add(packageName)
         }
         saveFavorites()
+    }
+
+    fun toggleGhost(packageName: String) {
+        val newSet = ghostPackages.toMutableSet()
+        if (newSet.contains(packageName)) {
+            newSet.remove(packageName)
+        } else {
+            newSet.add(packageName)
+        }
+        viewModelScope.launch {
+            repository.saveGhostPackages(newSet)
+        }
     }
 
     private fun saveFavorites() {

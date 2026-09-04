@@ -63,7 +63,6 @@ fun HomeView(
     searchQuery: String,
     tasksCount: Int,
     isVisible: Boolean = true,
-    selectedWidget: String = "none",
     showFavorites: Boolean = true,
     onSearchQueryChange: (String) -> Unit,
     onSearchToggle: (Boolean) -> Unit,
@@ -76,7 +75,10 @@ fun HomeView(
     getIcon: (String) -> android.graphics.drawable.Drawable? = { null },
     usageStats: Map<String, Long> = emptyMap(),
     usageMode: String = "none",
+    isMonochrome: Boolean = false,
     smartAction: SmartAction? = null,
+    noteResults: List<com.agnocode.minimalhomeapp.data.local.entities.NoteEntity> = emptyList(),
+    onNoteClick: (String) -> Unit = {},
     onSearch: () -> Unit = {},
     showIcons: Boolean = false,
     iconPackPackage: String? = null
@@ -207,10 +209,6 @@ fun HomeView(
                 }
 
                 Spacer(Modifier.height(32.dp))
-                
-                WidgetArea(selectedWidget)
-
-                Spacer(Modifier.height(32.dp))
 
                 if (showFavorites && favorites.isNotEmpty()) {
                     Text(
@@ -239,6 +237,7 @@ fun HomeView(
                             onProtectedLaunch = onProtectedLaunch,
                             iconOverride = getIcon(app.packageName),
                             usageSubtitle = usageSubtitle,
+                            isMonochrome = isMonochrome,
                             showIcon = showIcons,
                             iconPackPackage = iconPackPackage
                         )
@@ -309,9 +308,45 @@ fun HomeView(
                             onProtectedLaunch = onProtectedLaunch,
                             iconOverride = getIcon(app.packageName),
                             usageSubtitle = usageSubtitle,
+                            isMonochrome = isMonochrome,
                             showIcon = showIcons,
                             iconPackPackage = iconPackPackage
                         )
+                    }
+
+                    if (noteResults.isNotEmpty()) {
+                        item {
+                            Text(
+                                "Notes",
+                                color = Color.DarkGray,
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Bold,
+                                modifier = Modifier.padding(top = 16.dp, bottom = 8.dp)
+                            )
+                        }
+                        items(noteResults) { note ->
+                            Surface(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clickable { 
+                                        onNoteClick(note.date)
+                                        onSearchToggle(false)
+                                        onSearchQueryChange("")
+                                    }
+                                    .padding(vertical = 8.dp),
+                                color = Color.Transparent
+                            ) {
+                                Column {
+                                    Text(note.date, color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                                    Text(
+                                        note.content.take(50).replace("\n", " ") + "...",
+                                        color = Color.Gray,
+                                        fontSize = 12.sp,
+                                        maxLines = 1
+                                    )
+                                }
+                            }
+                        }
                     }
                     
                     if (searchQuery.isNotEmpty()) {
@@ -497,41 +532,4 @@ private fun formatUsagePercentage(millis: Long): String {
     val awakeMillis = 16 * 60 * 60 * 1000L // Assume 16 hours awake
     val pct = (millis.toFloat() / awakeMillis * 100).toInt()
     return if (pct > 0) "$pct% of your day" else "< 1% of your day"
-}
-
-@Composable
-fun WidgetArea(widgetType: String) {
-    val context = LocalContext.current
-    
-    when (widgetType) {
-        "battery" -> {
-            var batteryLevel by remember { mutableStateOf(0) }
-            val receiver = remember {
-                object : BroadcastReceiver() {
-                    override fun onReceive(context: Context?, intent: Intent?) {
-                        batteryLevel = intent?.getIntExtra(BatteryManager.EXTRA_LEVEL, 0) ?: 0
-                    }
-                }
-            }
-            DisposableEffect(context) {
-                context.registerReceiver(receiver, IntentFilter(Intent.ACTION_BATTERY_CHANGED))
-                onDispose { context.unregisterReceiver(receiver) }
-            }
-            Text("Battery: $batteryLevel%", color = Color.Gray, fontSize = 14.sp)
-        }
-        "alarm" -> {
-            val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as android.app.AlarmManager
-            val nextAlarm = alarmManager.nextAlarmClock?.triggerTime
-            val alarmText = if (nextAlarm != null) {
-                val d = Date(nextAlarm)
-                "Next Alarm: " + SimpleDateFormat("EEE HH:mm", Locale.getDefault()).format(d)
-            } else "No Alarms"
-            Text(alarmText, color = Color.Gray, fontSize = 14.sp)
-        }
-        "date" -> {
-            val fullDate = SimpleDateFormat("EEEE, MMMM d, yyyy", Locale.getDefault()).format(Date())
-            Text(fullDate, color = Color.Gray, fontSize = 14.sp)
-        }
-        else -> { /* None */ }
-    }
 }

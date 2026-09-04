@@ -8,8 +8,18 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.graphics.Color
 
-private val DarkColorScheme = darkColorScheme(
-    primary = Color.White,
+fun getAccentColor(name: String): Color {
+    return when (name) {
+        "gold" -> Color(0xFFFFD700)
+        "emerald" -> Color(0xFF50C878)
+        "blue" -> Color(0xFF3498DB)
+        "rose" -> Color(0xFFF08080)
+        else -> Color.White
+    }
+}
+
+private fun getDarkColorScheme(accentColor: Color) = darkColorScheme(
+    primary = accentColor,
     secondary = Color.Gray,
     tertiary = Color.DarkGray,
     background = Color.Black,
@@ -23,11 +33,13 @@ private val DarkColorScheme = darkColorScheme(
 
 @Composable
 fun MinimalHomeAppTheme(
+    accentColorName: String = "white",
     content: @Composable () -> Unit,
 ) {
+    val accentColor = getAccentColor(accentColorName)
     val typography = Typography()
     MaterialTheme(
-        colorScheme = DarkColorScheme,
+        colorScheme = getDarkColorScheme(accentColor),
         typography = typography,
     ) {
         CompositionLocalProvider(LocalTextStyle provides typography.bodyLarge) {

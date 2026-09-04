@@ -83,7 +83,9 @@ fun HomeScreenContainer(
     appDrawerViewModel: AppDrawerViewModel,
     focusModeViewModel: FocusModeViewModel
 ) {
-    MinimalHomeAppTheme {
+    val accentColor by mainViewModel.accentColorFlow.collectAsStateWithLifecycle()
+
+    MinimalHomeAppTheme(accentColorName = accentColor) {
         Surface(color = Color.Black) {
             HomeScreen(
                 mainViewModel,
@@ -171,8 +173,11 @@ fun HomeScreen(
     val allApps by appDrawerViewModel.apps.collectAsStateWithLifecycle()
     val blockedApps by focusModeViewModel.blockedAppsFlow.collectAsStateWithLifecycle()
     val protectedPackages by focusModeViewModel.protectedPackagesFlow.collectAsStateWithLifecycle()
+    val ghostPackages by appDrawerViewModel.ghostPackagesFlow.collectAsStateWithLifecycle()
     val usageStats by appDrawerViewModel.usageStats.collectAsStateWithLifecycle()
     val usageMode by appDrawerViewModel.usageAwarenessModeFlow.collectAsStateWithLifecycle()
+    val monochromeIcons by mainViewModel.monochromeIconsFlow.collectAsStateWithLifecycle()
+    val noteResults by mainViewModel.noteSearchResults.collectAsStateWithLifecycle()
     val smartActionHome by mainViewModel.smartAction.collectAsStateWithLifecycle()
     val smartActionDrawer by appDrawerViewModel.smartAction.collectAsStateWithLifecycle()
 
@@ -282,11 +287,13 @@ fun HomeScreen(
                     searchQuery = universalSearchQuery,
                     tasksCount = notesViewModel.currentTasks.count { !it.isChecked },
                     isVisible = pagerState.currentPage == 1,
-                    selectedWidget = mainViewModel.selectedWidget.value,
                     showFavorites = mainViewModel.showFavorites.value,
                     usageStats = usageStats,
                     usageMode = usageMode,
+                    isMonochrome = monochromeIcons,
                     smartAction = smartActionHome,
+                    noteResults = noteResults,
+                    onNoteClick = { notesViewModel.selectNoteDate(it) },
                     onSearchQueryChange = { mainViewModel.universalSearchQuery.value = it },
                     onSearchToggle = { mainViewModel.isUniversalSearchActive.value = it },
                     onRemoveFavorite = { appDrawerViewModel.toggleFavorite(it) },
@@ -330,9 +337,12 @@ fun HomeScreen(
                 isProtected = { protectedPackages.contains(it) },
                 onToggleProtected = { focusModeViewModel.toggleProtectedPackage(it) },
                 onProtectedLaunch = { authenticate(it) },
+                isGhost = { ghostPackages.contains(it) },
+                onToggleGhost = { appDrawerViewModel.toggleGhost(it) },
                 getIcon = { appDrawerViewModel.getIcon(it) },
                 usageStats = usageStats,
                 usageMode = usageMode,
+                isMonochrome = monochromeIcons,
                 smartAction = smartActionDrawer,
                 onSearch = {
                     if (visibleApps.isNotEmpty()) {
@@ -368,8 +378,6 @@ fun HomeScreen(
             onSetShowIcons = { appDrawerViewModel.setShowIcons(it) },
             showFavorites = mainViewModel.showFavorites.value,
             onSetShowFavorites = { mainViewModel.setShowFavorites(it) },
-            selectedWidget = mainViewModel.selectedWidget.value,
-            onSetSelectedWidget = { mainViewModel.setSelectedWidget(it) },
             dndSyncEnabled = focusModeViewModel.dndSyncEnabled.value,
             onSetDndSyncEnabled = { focusModeViewModel.setDndSyncEnabled(it) },
             hasDndPermission = { focusModeViewModel.hasDndPermission() },
@@ -380,6 +388,12 @@ fun HomeScreen(
             onSetIconPack = { appDrawerViewModel.setIconPack(it) },
             usageAwarenessMode = usageMode,
             onSetUsageAwarenessMode = { appDrawerViewModel.setUsageAwarenessMode(it) },
+            monochromeIcons = monochromeIcons,
+            onSetMonochromeIcons = { mainViewModel.setMonochromeIcons(it) },
+            accentColor = mainViewModel.accentColor.value,
+            onSetAccentColor = { mainViewModel.setAccentColor(it) },
+            ghostApps = allApps.filter { ghostPackages.contains(it.packageName) },
+            onRemoveGhost = { appDrawerViewModel.toggleGhost(it) },
             onBackup = {
                 val timestamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(Date())
                 createDocumentLauncher.launch("minimal_home_backup_$timestamp.json")

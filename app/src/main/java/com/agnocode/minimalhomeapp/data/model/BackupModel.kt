@@ -27,6 +27,8 @@ data class AppPreferencesBackup(
     val showIcons: Boolean = false,
     val dndSyncEnabled: Boolean = false,
     val biometricFocusLock: Boolean = false,
-    val selectedWidget: String = "none",
-    val showFavorites: Boolean = true
+    val showFavorites: Boolean = true,
+    val ghostPackages: Set<String> = emptySet(),
+    val monochromeIcons: Boolean = false,
+    val accentColor: String = "white"
 )

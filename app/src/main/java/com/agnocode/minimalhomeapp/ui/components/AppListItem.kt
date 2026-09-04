@@ -21,6 +21,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.graphics.ColorMatrix
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.TextStyle
@@ -47,8 +49,11 @@ fun AppListItem(
     isProtected: Boolean = false,
     onToggleProtected: () -> Unit = {},
     onProtectedLaunch: (() -> Unit) -> Unit = { it() },
+    isGhost: Boolean = false,
+    onToggleGhost: () -> Unit = {},
     iconOverride: android.graphics.drawable.Drawable? = null,
     usageSubtitle: String? = null,
+    isMonochrome: Boolean = false,
     showIcon: Boolean = false,
     iconPackPackage: String? = null
 ) {
@@ -100,9 +105,15 @@ fun AppListItem(
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             if (appIconRequest != null) {
+                val colorFilter = if (isMonochrome) {
+                    val matrix = ColorMatrix().apply { setToSaturation(0f) }
+                    ColorFilter.colorMatrix(matrix)
+                } else null
+                
                 AsyncImage(
                     model = appIconRequest,
                     contentDescription = null,
+                    colorFilter = colorFilter,
                     modifier = Modifier
                         .size(24.dp)
                         .clip(CircleShape)
@@ -156,6 +167,18 @@ fun AppListItem(
                 },
                 onClick = {
                     onToggleProtected()
+                    showMenu = false
+                }
+            )
+            DropdownMenuItem(
+                text = {
+                    Text(
+                        if (isGhost) "Remove from Stealth" else "Add to Stealth",
+                        color = Color.White
+                    )
+                },
+                onClick = {
+                    onToggleGhost()
                     showMenu = false
                 }
             )

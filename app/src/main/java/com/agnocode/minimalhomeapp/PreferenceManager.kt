@@ -30,12 +30,14 @@ class PreferenceManager(private val context: Context) {
         val DND_SYNC_ENABLED = booleanPreferencesKey("dnd_sync_enabled")
         val PROTECTED_PACKAGES = stringSetPreferencesKey("protected_packages")
         val BIOMETRIC_FOCUS_LOCK = booleanPreferencesKey("biometric_focus_lock")
-        val SELECTED_WIDGET = stringPreferencesKey("selected_widget")
         val SHOW_FAVORITES = booleanPreferencesKey("show_favorites")
         val LAST_MAINTENANCE_TIME = longPreferencesKey("last_maintenance_time")
         val USAGE_AWARENESS_MODE = stringPreferencesKey("usage_awareness_mode")
         val AUTO_SYNC_ENABLED = booleanPreferencesKey("auto_sync_enabled")
         val AUTO_SYNC_URI = stringPreferencesKey("auto_sync_uri")
+        val GHOST_PACKAGES = stringSetPreferencesKey("ghost_packages")
+        val MONOCHROME_ICONS = booleanPreferencesKey("monochrome_icons")
+        val ACCENT_COLOR = stringPreferencesKey("accent_color")
     }
 
     private fun encode(s: String): String = Base64.encodeToString(s.toByteArray(), Base64.NO_WRAP)
@@ -101,10 +103,6 @@ class PreferenceManager(private val context: Context) {
         preferences[BIOMETRIC_FOCUS_LOCK] ?: false
     }
 
-    val selectedWidgetFlow: Flow<String> = context.dataStore.data.map { preferences ->
-        preferences[SELECTED_WIDGET] ?: "none"
-    }
-
     val showFavoritesFlow: Flow<Boolean> = context.dataStore.data.map { preferences ->
         preferences[SHOW_FAVORITES] ?: true
     }
@@ -123,6 +121,18 @@ class PreferenceManager(private val context: Context) {
 
     val autoSyncUriFlow: Flow<String?> = context.dataStore.data.map { preferences ->
         preferences[AUTO_SYNC_URI]
+    }
+
+    val ghostPackagesFlow: Flow<Set<String>> = context.dataStore.data.map { preferences ->
+        preferences[GHOST_PACKAGES] ?: emptySet()
+    }
+
+    val monochromeIconsFlow: Flow<Boolean> = context.dataStore.data.map { preferences ->
+        preferences[MONOCHROME_ICONS] ?: true
+    }
+
+    val accentColorFlow: Flow<String> = context.dataStore.data.map { preferences ->
+        preferences[ACCENT_COLOR] ?: "white"
     }
 
     val dailyNotesFlow: Flow<Map<String, DailyNote>> = context.dataStore.data.map { preferences ->
@@ -227,12 +237,6 @@ class PreferenceManager(private val context: Context) {
         }
     }
 
-    suspend fun setSelectedWidget(widget: String) {
-        context.dataStore.edit { preferences ->
-            preferences[SELECTED_WIDGET] = widget
-        }
-    }
-
     suspend fun setShowFavorites(show: Boolean) {
         context.dataStore.edit { preferences ->
             preferences[SHOW_FAVORITES] = show
@@ -267,6 +271,24 @@ class PreferenceManager(private val context: Context) {
         }
     }
 
+    suspend fun saveGhostPackages(packages: Set<String>) {
+        context.dataStore.edit { preferences ->
+            preferences[GHOST_PACKAGES] = packages
+        }
+    }
+
+    suspend fun setMonochromeIcons(enabled: Boolean) {
+        context.dataStore.edit { preferences ->
+            preferences[MONOCHROME_ICONS] = enabled
+        }
+    }
+
+    suspend fun setAccentColor(color: String) {
+        context.dataStore.edit { preferences ->
+            preferences[ACCENT_COLOR] = color
+        }
+    }
+
     suspend fun saveDailyNotes(notes: Map<String, DailyNote>) {
         context.dataStore.edit { preferences ->
             val data = notes.values.joinToString("[NOTE]") { note ->
@@ -295,8 +317,10 @@ class PreferenceManager(private val context: Context) {
             showIcons = prefs[SHOW_ICONS] ?: false,
             dndSyncEnabled = prefs[DND_SYNC_ENABLED] ?: false,
             biometricFocusLock = prefs[BIOMETRIC_FOCUS_LOCK] ?: false,
-            selectedWidget = prefs[SELECTED_WIDGET] ?: "none",
-            showFavorites = prefs[SHOW_FAVORITES] ?: true
+            showFavorites = prefs[SHOW_FAVORITES] ?: true,
+            ghostPackages = prefs[GHOST_PACKAGES] ?: emptySet(),
+            monochromeIcons = prefs[MONOCHROME_ICONS] ?: false,
+            accentColor = prefs[ACCENT_COLOR] ?: "white"
         )
     }
 
@@ -316,11 +340,11 @@ class PreferenceManager(private val context: Context) {
                 preferences.remove(ICON_PACK_PACKAGE)
             }
             
-            preferences[SHOW_ICONS] = backup.showIcons
-            preferences[DND_SYNC_ENABLED] = backup.dndSyncEnabled
             preferences[BIOMETRIC_FOCUS_LOCK] = backup.biometricFocusLock
-            preferences[SELECTED_WIDGET] = backup.selectedWidget
             preferences[SHOW_FAVORITES] = backup.showFavorites
+            preferences[GHOST_PACKAGES] = backup.ghostPackages
+            preferences[MONOCHROME_ICONS] = backup.monochromeIcons
+            preferences[ACCENT_COLOR] = backup.accentColor
         }
     }
 }
