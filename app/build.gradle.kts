@@ -60,6 +60,7 @@ dependencies {
     ksp(libs.androidx.room.compiler)
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
+    implementation("androidx.biometric:biometric-ktx:1.2.0-alpha05")
     implementation(libs.androidx.lifecycle.viewmodel.compose)
     implementation(libs.hilt.android)
     ksp(libs.hilt.compiler)

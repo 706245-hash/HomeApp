@@ -46,6 +46,15 @@ fun SettingsDialog(
     onDeleteFocusMode: (String) -> Unit,
     showIcons: Boolean,
     onSetShowIcons: (Boolean) -> Unit,
+    showFavorites: Boolean,
+    onSetShowFavorites: (Boolean) -> Unit,
+    selectedWidget: String,
+    onSetSelectedWidget: (String) -> Unit,
+    dndSyncEnabled: Boolean,
+    onSetDndSyncEnabled: (Boolean) -> Unit,
+    hasDndPermission: () -> Boolean,
+    biometricFocusLock: Boolean,
+    onSetBiometricFocusLock: (Boolean) -> Unit,
     availableIconPacks: List<AppItem>,
     selectedIconPack: String?,
     onSetIconPack: (String?) -> Unit
@@ -221,6 +230,63 @@ fun SettingsDialog(
                             }
                         }
                     }
+
+                    item {
+                        SettingsRow(label = "Show Favorites") {
+                            Switch(
+                                checked = showFavorites,
+                                onCheckedChange = onSetShowFavorites,
+                                colors = SwitchDefaults.colors(
+                                    checkedThumbColor = Color.Black,
+                                    checkedTrackColor = Color.White,
+                                    uncheckedThumbColor = Color.Gray,
+                                    uncheckedTrackColor = Color.DarkGray
+                                )
+                            )
+                        }
+                    }
+
+                    item {
+                        SettingsRow(label = "Home Widget") {
+                            var showWidgetMenu by remember { mutableStateOf(false) }
+                            Box {
+                                val currentLabel = when (selectedWidget) {
+                                    "battery" -> "Battery %"
+                                    "alarm" -> "Next Alarm"
+                                    "date" -> "Full Date"
+                                    else -> "None"
+                                }
+                                Text(
+                                    currentLabel,
+                                    color = Color.LightGray,
+                                    modifier = Modifier.clickable { showWidgetMenu = true }.padding(8.dp)
+                                )
+                                DropdownMenu(
+                                    expanded = showWidgetMenu,
+                                    onDismissRequest = { showWidgetMenu = false },
+                                    modifier = Modifier
+                                        .background(Color.Black)
+                                        .border(1.dp, Color.White, MaterialTheme.shapes.extraSmall)
+                                ) {
+                                    val options = listOf(
+                                        "none" to "None",
+                                        "battery" to "Battery %",
+                                        "alarm" to "Next Alarm",
+                                        "date" to "Full Date"
+                                    )
+                                    options.forEach { (id, label) ->
+                                        DropdownMenuItem(
+                                            text = { Text(label, color = Color.White) },
+                                            onClick = {
+                                                onSetSelectedWidget(id)
+                                                showWidgetMenu = false
+                                            }
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
                 }
 
                 item { Divider() }
@@ -240,6 +306,28 @@ fun SettingsDialog(
                 }
 
                 if (focusModesExpanded) {
+                    item {
+                        SettingsRow(label = "Sync with Do Not Disturb") {
+                            Switch(
+                                checked = dndSyncEnabled,
+                                onCheckedChange = { enabled ->
+                                    if (enabled && !hasDndPermission()) {
+                                        val intent = Intent(Settings.ACTION_NOTIFICATION_POLICY_ACCESS_SETTINGS)
+                                        context.startActivity(intent)
+                                    } else {
+                                        onSetDndSyncEnabled(enabled)
+                                    }
+                                },
+                                colors = SwitchDefaults.colors(
+                                    checkedThumbColor = Color.Black,
+                                    checkedTrackColor = Color.White,
+                                    uncheckedThumbColor = Color.Gray,
+                                    uncheckedTrackColor = Color.DarkGray
+                                )
+                            )
+                        }
+                    }
+
                     if (focusModes.isEmpty()) {
                         item {
                             Text("No focus modes defined", color = Color.Gray, fontSize = 14.sp, modifier = Modifier.padding(start = 32.dp, bottom = 16.dp))
@@ -282,6 +370,39 @@ fun SettingsDialog(
                                 onUnblock = { onUnblock(pkg) }
                             )
                         }
+                    }
+                }
+
+                item { Divider() }
+
+                // Section: Security
+                item {
+                    var securityExpanded by remember { mutableStateOf(false) }
+                    SettingsSectionHeader(
+                        title = "Security",
+                        isExpanded = securityExpanded,
+                        onToggle = { securityExpanded = !securityExpanded }
+                    )
+                    
+                    if (securityExpanded) {
+                        SettingsRow(label = "Biometric Focus Protection") {
+                            Switch(
+                                checked = biometricFocusLock,
+                                onCheckedChange = onSetBiometricFocusLock,
+                                colors = SwitchDefaults.colors(
+                                    checkedThumbColor = Color.Black,
+                                    checkedTrackColor = Color.White,
+                                    uncheckedThumbColor = Color.Gray,
+                                    uncheckedTrackColor = Color.DarkGray
+                                )
+                            )
+                        }
+                        Text(
+                            "Require authentication to turn off Focus Mode if tasks are incomplete.",
+                            color = Color.Gray,
+                            fontSize = 12.sp,
+                            modifier = Modifier.padding(start = 32.dp, bottom = 16.dp, end = 24.dp)
+                        )
                     }
                 }
             }

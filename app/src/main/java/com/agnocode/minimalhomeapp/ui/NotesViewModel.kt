@@ -33,6 +33,12 @@ class NotesViewModel @Inject constructor(
     var currentNoteText = mutableStateOf("")
     val currentTasks = mutableStateListOf<NoteTask>()
     var isEditingPastNote = mutableStateOf(false)
+    
+    val hasIncompleteTasks = derivedStateOf {
+        val today = dateFmt.format(Date())
+        if (selectedNoteDate.value != today) false // Focus commitment usually applies to today
+        else currentTasks.any { !it.isChecked }
+    }
     private var snapshotNoteText: String = ""
     private var snapshotTasks: List<NoteTask> = emptyList()
 
@@ -56,6 +62,27 @@ class NotesViewModel @Inject constructor(
 
     init {
         collectDailyNotes()
+        startMidnightTimer()
+    }
+
+    private fun startMidnightTimer() {
+        viewModelScope.launch {
+            while (true) {
+                val now = Calendar.getInstance()
+                val midnight = Calendar.getInstance().apply {
+                    add(Calendar.DAY_OF_YEAR, 1)
+                    set(Calendar.HOUR_OF_DAY, 0)
+                    set(Calendar.MINUTE, 0)
+                    set(Calendar.SECOND, 0)
+                    set(Calendar.MILLISECOND, 0)
+                }
+                val delayTime = midnight.timeInMillis - now.timeInMillis
+                if (delayTime > 0) {
+                    delay(delayTime)
+                }
+                resetToToday()
+            }
+        }
     }
 
     private fun collectDailyNotes() {
@@ -79,6 +106,13 @@ class NotesViewModel @Inject constructor(
         currentNoteText.value = note.content
         currentTasks.clear()
         currentTasks.addAll(note.tasks)
+    }
+
+    fun resetToToday() {
+        val today = dateFmt.format(Date())
+        if (selectedNoteDate.value != today) {
+            selectNoteDate(today)
+        }
     }
 
     fun selectNoteDate(date: String) {

@@ -1,5 +1,6 @@
 package com.agnocode.minimalhomeapp.ui.components
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -35,6 +36,10 @@ fun AppDrawerView(
     onToggleFavorite: (String) -> Unit,
     onBlock: (String, Long?) -> Unit,
     isFavorite: (String) -> Boolean,
+    isProtected: (String) -> Boolean = { false },
+    onToggleProtected: (String) -> Unit = {},
+    onProtectedLaunch: (() -> Unit) -> Unit = { it() },
+    getIcon: (String) -> android.graphics.drawable.Drawable? = { null },
     onSearch: () -> Unit = {},
     showIcons: Boolean = false,
     iconPackPackage: String? = null
@@ -44,6 +49,7 @@ fun AppDrawerView(
     Column(
         modifier = Modifier
             .fillMaxSize()
+            .background(Color.Black)
             .safeDrawingPadding()
             .padding(horizontal = 24.dp)
     ) {
@@ -113,6 +119,10 @@ fun AppDrawerView(
                             isFavorite = isFavorite(app.packageName),
                             onToggleFavorite = { onToggleFavorite(app.packageName) },
                             onBlock = { duration -> onBlock(app.packageName, duration) },
+                            isProtected = isProtected(app.packageName),
+                            onToggleProtected = { onToggleProtected(app.packageName) },
+                            onProtectedLaunch = onProtectedLaunch,
+                            iconOverride = getIcon(app.packageName),
                             showIcon = showIcons,
                             iconPackPackage = iconPackPackage
                         )

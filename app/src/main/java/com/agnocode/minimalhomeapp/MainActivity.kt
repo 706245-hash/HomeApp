@@ -7,7 +7,7 @@ import android.content.IntentFilter
 import android.os.Build
 import android.os.Bundle
 import android.util.Log
-import androidx.activity.ComponentActivity
+import androidx.fragment.app.FragmentActivity
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -32,13 +32,14 @@ import com.agnocode.minimalhomeapp.ui.components.HomeView
 import com.agnocode.minimalhomeapp.ui.components.NotesView
 import com.agnocode.minimalhomeapp.ui.components.SettingsDialog
 import com.agnocode.minimalhomeapp.ui.theme.MinimalHomeAppTheme
+import com.agnocode.minimalhomeapp.util.BiometricHelper
 import com.agnocode.minimalhomeapp.util.isFuzzyMatch
 import dagger.hilt.android.AndroidEntryPoint
 import android.net.Uri
 import kotlinx.coroutines.launch
 
 @AndroidEntryPoint
-class MainActivity : ComponentActivity() {
+class MainActivity : FragmentActivity() {
     private lateinit var mainViewModel: MainViewModel
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -144,6 +145,9 @@ fun HomeScreen(
         if (pagerState.currentPage == 1) {
             keyboardController?.hide()
         }
+        if (pagerState.currentPage != 0) {
+            notesViewModel.resetToToday()
+        }
     }
 
     LaunchedEffect(mainViewModel.resetToHomeEvent) {
@@ -160,6 +164,21 @@ fun HomeScreen(
     val universalSearchQuery by mainViewModel.universalSearchQuery.collectAsStateWithLifecycle()
     val allApps by appDrawerViewModel.apps.collectAsStateWithLifecycle()
     val blockedApps by focusModeViewModel.blockedAppsFlow.collectAsStateWithLifecycle()
+    val protectedPackages by focusModeViewModel.protectedPackagesFlow.collectAsStateWithLifecycle()
+
+    fun authenticate(onSuccess: () -> Unit) {
+        if (BiometricHelper.canAuthenticate(context as FragmentActivity)) {
+            BiometricHelper.authenticate(
+                activity = context,
+                title = "Authentication Required",
+                subtitle = "Please authenticate to proceed",
+                onSuccess = onSuccess
+            )
+        } else {
+            // Fallback for devices without biometric security
+            onSuccess()
+        }
+    }
 
     HorizontalPager(
         state = pagerState,
@@ -191,10 +210,22 @@ fun HomeScreen(
                     isSearchActive = mainViewModel.isUniversalSearchActive.value,
                     searchQuery = universalSearchQuery,
                     tasksCount = notesViewModel.currentTasks.count { !it.isChecked },
+                    isVisible = pagerState.currentPage == 1,
+                    selectedWidget = mainViewModel.selectedWidget.value,
+                    showFavorites = mainViewModel.showFavorites.value,
                     onSearchQueryChange = { mainViewModel.universalSearchQuery.value = it },
                     onSearchToggle = { mainViewModel.isUniversalSearchActive.value = it },
                     onRemoveFavorite = { appDrawerViewModel.toggleFavorite(it) },
                     onBlock = { pkg, expiry -> focusModeViewModel.blockApp(pkg, expiry) },
+                    onTasksClick = {
+                        scope.launch {
+                            pagerState.animateScrollToPage(0)
+                        }
+                    },
+                    protectedPackages = protectedPackages,
+                    onToggleProtected = { focusModeViewModel.toggleProtectedPackage(it) },
+                    onProtectedLaunch = { authenticate(it) },
+                    getIcon = { appDrawerViewModel.getIcon(it) },
                     onSearch = {
                         if (results.isNotEmpty()) {
                             val intent = context.packageManager.getLaunchIntentForPackage(results[0].packageName)
@@ -222,6 +253,10 @@ fun HomeScreen(
                 onToggleFavorite = { appDrawerViewModel.toggleFavorite(it) },
                 onBlock = { pkg, expiry -> focusModeViewModel.blockApp(pkg, expiry) },
                 isFavorite = { appDrawerViewModel.favoritePackages.contains(it) },
+                isProtected = { protectedPackages.contains(it) },
+                onToggleProtected = { focusModeViewModel.toggleProtectedPackage(it) },
+                onProtectedLaunch = { authenticate(it) },
+                getIcon = { appDrawerViewModel.getIcon(it) },
                 onSearch = {
                     if (visibleApps.isNotEmpty()) {
                         val intent = context.packageManager.getLaunchIntentForPackage(visibleApps[0].packageName)
@@ -243,11 +278,26 @@ fun HomeScreen(
             onUnblock = { focusModeViewModel.unblockApp(it) },
             focusModes = focusModeViewModel.focusModes,
             activeFocusModeName = focusModeViewModel.activeFocusModeName.value,
-            onToggleFocusMode = { focusModeViewModel.toggleFocusMode(it) },
+            onToggleFocusMode = { name ->
+                if (name == null && focusModeViewModel.activeFocusModeName.value != null && focusModeViewModel.biometricFocusLock.value && notesViewModel.hasIncompleteTasks.value) {
+                    authenticate { focusModeViewModel.toggleFocusMode(null) }
+                } else {
+                    focusModeViewModel.toggleFocusMode(name)
+                }
+            },
             onAddFocusMode = { name, pkgs, start, end, oldName -> focusModeViewModel.addFocusMode(name, pkgs, start, end, oldName) },
             onDeleteFocusMode = { focusModeViewModel.deleteFocusMode(it) },
             showIcons = appDrawerViewModel.showIcons.value,
             onSetShowIcons = { appDrawerViewModel.setShowIcons(it) },
+            showFavorites = mainViewModel.showFavorites.value,
+            onSetShowFavorites = { mainViewModel.setShowFavorites(it) },
+            selectedWidget = mainViewModel.selectedWidget.value,
+            onSetSelectedWidget = { mainViewModel.setSelectedWidget(it) },
+            dndSyncEnabled = focusModeViewModel.dndSyncEnabled.value,
+            onSetDndSyncEnabled = { focusModeViewModel.setDndSyncEnabled(it) },
+            hasDndPermission = { focusModeViewModel.hasDndPermission() },
+            biometricFocusLock = focusModeViewModel.biometricFocusLock.value,
+            onSetBiometricFocusLock = { focusModeViewModel.setBiometricFocusLock(it) },
             availableIconPacks = appDrawerViewModel.availableIconPacks,
             selectedIconPack = appDrawerViewModel.iconPackPackage.value,
             onSetIconPack = { appDrawerViewModel.setIconPack(it) }

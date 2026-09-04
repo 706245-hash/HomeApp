@@ -2,7 +2,9 @@ package com.agnocode.minimalhomeapp.data
 
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.util.Log
 import com.agnocode.minimalhomeapp.PreferenceManager
+import com.agnocode.minimalhomeapp.data.local.AppDatabase
 import com.agnocode.minimalhomeapp.data.local.dao.FocusModeDao
 import com.agnocode.minimalhomeapp.data.local.dao.NoteDao
 import com.agnocode.minimalhomeapp.data.FocusModeScheduler
@@ -13,6 +15,7 @@ import com.agnocode.minimalhomeapp.data.model.AppItem
 import com.agnocode.minimalhomeapp.data.model.DailyNote
 import com.agnocode.minimalhomeapp.data.model.FocusMode
 import com.agnocode.minimalhomeapp.data.model.NoteTask
+import androidx.sqlite.db.SimpleSQLiteQuery
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.*
@@ -24,6 +27,7 @@ import javax.inject.Singleton
 class AppRepository @Inject constructor(
     private val pm: PackageManager,
     private val prefs: PreferenceManager,
+    private val db: AppDatabase,
     private val noteDao: NoteDao,
     private val focusModeDao: FocusModeDao,
     private val scheduler: FocusModeScheduler
@@ -34,6 +38,11 @@ class AppRepository @Inject constructor(
     val iconPackPackageFlow: Flow<String?> = prefs.iconPackPackageFlow
     val showIconsFlow: Flow<Boolean> = prefs.showIconsFlow
     val favoritesInitializedFlow: Flow<Boolean> = prefs.favoritesInitializedFlow
+    val dndSyncEnabledFlow: Flow<Boolean> = prefs.dndSyncEnabledFlow
+    val protectedPackagesFlow: Flow<Set<String>> = prefs.protectedPackagesFlow
+    val biometricFocusLockFlow: Flow<Boolean> = prefs.biometricFocusLockFlow
+    val selectedWidgetFlow: Flow<String> = prefs.selectedWidgetFlow
+    val showFavoritesFlow: Flow<Boolean> = prefs.showFavoritesFlow
 
     @OptIn(ExperimentalCoroutinesApi::class)
     val dailyNotesFlow: Flow<Map<String, DailyNote>> = noteDao.getAllNotesWithTasks().map { notesWithTasks ->
@@ -64,6 +73,13 @@ class AppRepository @Inject constructor(
     }
 
     suspend fun checkAndPerformMigration() = withContext(Dispatchers.IO) {
+        val lastMaintenance = prefs.lastMaintenanceTimeFlow.first()
+        val now = System.currentTimeMillis()
+        if (now - lastMaintenance > 7 * 24 * 60 * 60 * 1000L) {
+            performDatabaseMaintenance()
+            prefs.saveLastMaintenanceTime(now)
+        }
+        
         if (prefs.dataMigratedFlow.first()) return@withContext
 
         val existingNotes = prefs.dailyNotesFlow.first()
@@ -90,6 +106,14 @@ class AppRepository @Inject constructor(
             TaskEntity(task.id, note.date, task.text, task.isChecked, index)
         }
         noteDao.saveNoteWithTasks(entity, tasks)
+    }
+
+    private fun performDatabaseMaintenance() {
+        try {
+            db.openHelper.writableDatabase.execSQL("VACUUM")
+        } catch (e: Exception) {
+            Log.e("AppRepository", "Database maintenance failed", e)
+        }
     }
 
     suspend fun updateFocusSchedule() = withContext(Dispatchers.IO) {
@@ -160,6 +184,26 @@ class AppRepository @Inject constructor(
 
     suspend fun setFavoritesInitialized() {
         prefs.setFavoritesInitialized()
+    }
+
+    suspend fun setDndSyncEnabled(enabled: Boolean) {
+        prefs.setDndSyncEnabled(enabled)
+    }
+
+    suspend fun saveProtectedPackages(packages: Set<String>) {
+        prefs.saveProtectedPackages(packages)
+    }
+
+    suspend fun setBiometricFocusLock(enabled: Boolean) {
+        prefs.setBiometricFocusLock(enabled)
+    }
+
+    suspend fun setSelectedWidget(widget: String) {
+        prefs.setSelectedWidget(widget)
+    }
+
+    suspend fun setShowFavorites(show: Boolean) {
+        prefs.setShowFavorites(show)
     }
 
     suspend fun saveDailyNotes(notes: Map<String, DailyNote>) {

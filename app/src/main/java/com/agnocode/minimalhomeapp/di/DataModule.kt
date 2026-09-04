@@ -2,6 +2,7 @@ package com.agnocode.minimalhomeapp.di
 
 import android.content.Context
 import android.content.pm.PackageManager
+import coil.ImageLoader
 import com.agnocode.minimalhomeapp.PreferenceManager
 import dagger.Module
 import dagger.Provides
@@ -24,5 +25,11 @@ object DataModule {
     @Singleton
     fun providePackageManager(@ApplicationContext context: Context): PackageManager {
         return context.packageManager
+    }
+
+    @Provides
+    @Singleton
+    fun provideImageLoader(@ApplicationContext context: Context): ImageLoader {
+        return ImageLoader.Builder(context).build()
     }
 }

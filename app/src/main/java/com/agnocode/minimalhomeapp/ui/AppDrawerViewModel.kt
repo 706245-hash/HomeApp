@@ -1,7 +1,10 @@
 package com.agnocode.minimalhomeapp.ui
 
+import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
+import coil.ImageLoader
+import coil.request.ImageRequest
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
@@ -12,6 +15,8 @@ import com.agnocode.minimalhomeapp.data.AppRepository
 import com.agnocode.minimalhomeapp.data.model.AppItem
 import com.agnocode.minimalhomeapp.util.isFuzzyMatch
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.*
@@ -21,7 +26,9 @@ import javax.inject.Inject
 @HiltViewModel
 class AppDrawerViewModel @Inject constructor(
     private val repository: AppRepository,
-    private val pm: PackageManager
+    private val pm: PackageManager,
+    private val imageLoader: ImageLoader,
+    @ApplicationContext private val context: Context
 ) : ViewModel() {
 
     private val _apps = MutableStateFlow<List<AppItem>>(emptyList())
@@ -35,6 +42,8 @@ class AppDrawerViewModel @Inject constructor(
     
     var iconPackPackage = mutableStateOf<String?>(null)
     var showIcons = mutableStateOf(false)
+
+    private val iconCache = mutableMapOf<String, android.graphics.drawable.Drawable>()
 
     val availableIconPacks = mutableStateListOf<AppItem>()
     val searchQuery = MutableStateFlow("")
@@ -115,7 +124,38 @@ class AppDrawerViewModel @Inject constructor(
             val newList = repository.getInstalledApps()
             _apps.value = newList
             isRefreshing.value = false
+            prewarmIconCache(newList)
         }
+    }
+
+    private fun prewarmIconCache(apps: List<AppItem>) {
+        if (!showIcons.value) return
+        
+        viewModelScope.launch(Dispatchers.IO) {
+            val toCache = (favoritePackages.toList() + apps.take(20).map { it.packageName })
+                .distinct()
+            
+            toCache.forEach { pkg ->
+                if (!iconCache.containsKey(pkg)) {
+                    try {
+                        val icon = pm.getApplicationIcon(pkg)
+                        iconCache[pkg] = icon
+                        // Also tell Coil to cache the bitmap for smoother UI transitions
+                        val request = ImageRequest.Builder(context)
+                            .data(icon)
+                            .size(100)
+                            .build()
+                        imageLoader.enqueue(request)
+                    } catch (e: Exception) {
+                        // Skip
+                    }
+                }
+            }
+        }
+    }
+
+    fun getIcon(packageName: String): android.graphics.drawable.Drawable? {
+        return iconCache[packageName]
     }
 
     fun refreshIconPacks() {

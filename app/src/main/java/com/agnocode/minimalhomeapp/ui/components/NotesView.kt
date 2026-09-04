@@ -398,7 +398,7 @@ fun WeeklyDashboard(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        containerColor = Color.Black.copy(alpha = 0.9f),
+        containerColor = Color.Black,
         title = {
             Text(
                 text = "Weekly Performance",

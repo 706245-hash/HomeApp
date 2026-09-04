@@ -25,6 +25,12 @@ class PreferenceManager(private val context: Context) {
         val DAILY_NOTES = stringPreferencesKey("daily_notes") 
         val FAVORITES_INITIALIZED = booleanPreferencesKey("favorites_initialized")
         val DATA_MIGRATED = booleanPreferencesKey("data_migrated_to_room")
+        val DND_SYNC_ENABLED = booleanPreferencesKey("dnd_sync_enabled")
+        val PROTECTED_PACKAGES = stringSetPreferencesKey("protected_packages")
+        val BIOMETRIC_FOCUS_LOCK = booleanPreferencesKey("biometric_focus_lock")
+        val SELECTED_WIDGET = stringPreferencesKey("selected_widget")
+        val SHOW_FAVORITES = booleanPreferencesKey("show_favorites")
+        val LAST_MAINTENANCE_TIME = longPreferencesKey("last_maintenance_time")
     }
 
     private fun encode(s: String): String = Base64.encodeToString(s.toByteArray(), Base64.NO_WRAP)
@@ -76,6 +82,30 @@ class PreferenceManager(private val context: Context) {
 
     val dataMigratedFlow: Flow<Boolean> = context.dataStore.data.map { preferences ->
         preferences[DATA_MIGRATED] ?: false
+    }
+
+    val dndSyncEnabledFlow: Flow<Boolean> = context.dataStore.data.map { preferences ->
+        preferences[DND_SYNC_ENABLED] ?: false
+    }
+
+    val protectedPackagesFlow: Flow<Set<String>> = context.dataStore.data.map { preferences ->
+        preferences[PROTECTED_PACKAGES] ?: emptySet()
+    }
+
+    val biometricFocusLockFlow: Flow<Boolean> = context.dataStore.data.map { preferences ->
+        preferences[BIOMETRIC_FOCUS_LOCK] ?: false
+    }
+
+    val selectedWidgetFlow: Flow<String> = context.dataStore.data.map { preferences ->
+        preferences[SELECTED_WIDGET] ?: "none"
+    }
+
+    val showFavoritesFlow: Flow<Boolean> = context.dataStore.data.map { preferences ->
+        preferences[SHOW_FAVORITES] ?: true
+    }
+
+    val lastMaintenanceTimeFlow: Flow<Long> = context.dataStore.data.map { preferences ->
+        preferences[LAST_MAINTENANCE_TIME] ?: 0L
     }
 
     val dailyNotesFlow: Flow<Map<String, DailyNote>> = context.dataStore.data.map { preferences ->
@@ -159,6 +189,42 @@ class PreferenceManager(private val context: Context) {
     suspend fun setDataMigrated() {
         context.dataStore.edit { preferences ->
             preferences[DATA_MIGRATED] = true
+        }
+    }
+
+    suspend fun setDndSyncEnabled(enabled: Boolean) {
+        context.dataStore.edit { preferences ->
+            preferences[DND_SYNC_ENABLED] = enabled
+        }
+    }
+
+    suspend fun saveProtectedPackages(packages: Set<String>) {
+        context.dataStore.edit { preferences ->
+            preferences[PROTECTED_PACKAGES] = packages
+        }
+    }
+
+    suspend fun setBiometricFocusLock(enabled: Boolean) {
+        context.dataStore.edit { preferences ->
+            preferences[BIOMETRIC_FOCUS_LOCK] = enabled
+        }
+    }
+
+    suspend fun setSelectedWidget(widget: String) {
+        context.dataStore.edit { preferences ->
+            preferences[SELECTED_WIDGET] = widget
+        }
+    }
+
+    suspend fun setShowFavorites(show: Boolean) {
+        context.dataStore.edit { preferences ->
+            preferences[SHOW_FAVORITES] = show
+        }
+    }
+
+    suspend fun saveLastMaintenanceTime(time: Long) {
+        context.dataStore.edit { preferences ->
+            preferences[LAST_MAINTENANCE_TIME] = time
         }
     }
 

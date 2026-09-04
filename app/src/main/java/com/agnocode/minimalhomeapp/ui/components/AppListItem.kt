@@ -32,6 +32,7 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.core.graphics.drawable.toBitmap
 import coil.compose.AsyncImage
+import coil.request.ImageRequest
 import com.agnocode.minimalhomeapp.data.model.AppItem
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -43,6 +44,10 @@ fun AppListItem(
     isFavorite: Boolean,
     onToggleFavorite: () -> Unit,
     onBlock: (Long?) -> Unit,
+    isProtected: Boolean = false,
+    onToggleProtected: () -> Unit = {},
+    onProtectedLaunch: (() -> Unit) -> Unit = { it() },
+    iconOverride: android.graphics.drawable.Drawable? = null,
     showIcon: Boolean = false,
     iconPackPackage: String? = null
 ) {
@@ -52,18 +57,22 @@ fun AppListItem(
     var showBlockMenu by remember { mutableStateOf(false) }
     var showCustomBlockDialog by remember { mutableStateOf(false) }
 
-    val appIcon by produceState<android.graphics.drawable.Drawable?>(initialValue = null, app.packageName, showIcon) {
+    val appIconRequest = remember(app.packageName, showIcon, iconOverride) {
         if (showIcon) {
-            value = withContext(Dispatchers.IO) {
-                try {
-                    pm.getApplicationIcon(app.packageName)
-                } catch (e: Exception) {
-                    null
-                }
+            val data = iconOverride ?: try {
+                pm.getApplicationIcon(app.packageName)
+            } catch (e: Exception) {
+                null
             }
-        } else {
-            value = null
-        }
+            
+            if (data != null) {
+                ImageRequest.Builder(context)
+                    .data(data)
+                    .size(72) // Target 24dp * 3x density
+                    .crossfade(true)
+                    .build()
+            } else null
+        } else null
     }
 
     Box(
@@ -71,8 +80,15 @@ fun AppListItem(
             .fillMaxWidth()
             .combinedClickable(
                 onClick = {
-                    val launchIntent = pm.getLaunchIntentForPackage(app.packageName)
-                    launchIntent?.let { context.startActivity(it) }
+                    if (isProtected) {
+                        onProtectedLaunch {
+                            val launchIntent = pm.getLaunchIntentForPackage(app.packageName)
+                            launchIntent?.let { context.startActivity(it) }
+                        }
+                    } else {
+                        val launchIntent = pm.getLaunchIntentForPackage(app.packageName)
+                        launchIntent?.let { context.startActivity(it) }
+                    }
                 },
                 onLongClick = {
                     showMenu = true
@@ -82,19 +98,20 @@ fun AppListItem(
         contentAlignment = Alignment.CenterStart
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            if (appIcon != null) {
+            if (appIconRequest != null) {
                 AsyncImage(
-                    model = appIcon,
+                    model = appIconRequest,
                     contentDescription = null,
                     modifier = Modifier
                         .size(24.dp)
                         .clip(CircleShape)
+                        .then(if (isProtected) Modifier.background(Color.White.copy(alpha = 0.1f), CircleShape) else Modifier)
                 )
                 Spacer(Modifier.width(12.dp))
             }
             Text(
                 text = app.label,
-                color = Color.White,
+                color = if (isProtected) Color.LightGray else Color.White,
                 fontSize = 18.sp,
                 fontWeight = FontWeight.Normal
             )
@@ -116,6 +133,18 @@ fun AppListItem(
                 },
                 onClick = {
                     onToggleFavorite()
+                    showMenu = false
+                }
+            )
+            DropdownMenuItem(
+                text = {
+                    Text(
+                        if (isProtected) "Remove Biometric Shield" else "Add Biometric Shield",
+                        color = Color.White
+                    )
+                },
+                onClick = {
+                    onToggleProtected()
                     showMenu = false
                 }
             )

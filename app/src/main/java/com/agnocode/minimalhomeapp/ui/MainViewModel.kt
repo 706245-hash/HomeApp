@@ -16,13 +16,45 @@ class MainViewModel @Inject constructor(
 
     val universalSearchQuery = MutableStateFlow("")
     var isUniversalSearchActive = mutableStateOf(false)
+    var selectedWidget = mutableStateOf("none")
+    var showFavorites = mutableStateOf(true)
 
     private val _resetToHomeEvent = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
     val resetToHomeEvent = _resetToHomeEvent.asSharedFlow()
 
+    val selectedWidgetFlow: StateFlow<String> = repository.selectedWidgetFlow.stateIn(
+        viewModelScope, SharingStarted.WhileSubscribed(5000), "none"
+    )
+
+    val showFavoritesFlow: StateFlow<Boolean> = repository.showFavoritesFlow.stateIn(
+        viewModelScope, SharingStarted.WhileSubscribed(5000), true
+    )
+
     init {
+        collectSettings()
         viewModelScope.launch {
             repository.checkAndPerformMigration()
+        }
+    }
+
+    private fun collectSettings() {
+        viewModelScope.launch {
+            selectedWidgetFlow.collect { selectedWidget.value = it }
+        }
+        viewModelScope.launch {
+            showFavoritesFlow.collect { showFavorites.value = it }
+        }
+    }
+
+    fun setSelectedWidget(widget: String) {
+        viewModelScope.launch {
+            repository.setSelectedWidget(widget)
+        }
+    }
+
+    fun setShowFavorites(show: Boolean) {
+        viewModelScope.launch {
+            repository.setShowFavorites(show)
         }
     }
 

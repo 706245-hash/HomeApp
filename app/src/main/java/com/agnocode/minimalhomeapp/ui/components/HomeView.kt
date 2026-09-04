@@ -1,7 +1,12 @@
 package com.agnocode.minimalhomeapp.ui.components
 
+import android.content.BroadcastReceiver
+import android.content.Context
+import android.content.ContextWrapper
 import android.content.Intent
+import android.content.IntentFilter
 import android.net.Uri
+import android.os.BatteryManager
 import android.provider.AlarmClock
 import android.util.Log
 import androidx.compose.foundation.ExperimentalFoundationApi
@@ -56,10 +61,18 @@ fun HomeView(
     isSearchActive: Boolean,
     searchQuery: String,
     tasksCount: Int,
+    isVisible: Boolean = true,
+    selectedWidget: String = "none",
+    showFavorites: Boolean = true,
     onSearchQueryChange: (String) -> Unit,
     onSearchToggle: (Boolean) -> Unit,
     onRemoveFavorite: (String) -> Unit,
     onBlock: (String, Long?) -> Unit,
+    onTasksClick: () -> Unit = {},
+    protectedPackages: Set<String> = emptySet(),
+    onToggleProtected: (String) -> Unit = {},
+    onProtectedLaunch: (() -> Unit) -> Unit = { it() },
+    getIcon: (String) -> android.graphics.drawable.Drawable? = { null },
     onSearch: () -> Unit = {},
     showIcons: Boolean = false,
     iconPackPackage: String? = null
@@ -111,17 +124,20 @@ fun HomeView(
         }
     }
 
-    LaunchedEffect(Unit) {
-        while (true) {
-            time = currentTime()
-            val nextSecond = 1000 - (System.currentTimeMillis() % 1000)
-            delay(nextSecond.milliseconds)
+    LaunchedEffect(isVisible) {
+        if (isVisible) {
+            while (true) {
+                time = currentTime()
+                val nextSecond = 1000 - (System.currentTimeMillis() % 1000)
+                delay(nextSecond.milliseconds)
+            }
         }
     }
 
     Box(
         modifier = Modifier
             .fillMaxSize()
+            .background(Color.Black)
             .nestedScroll(nestedScrollConnection)
             .pointerInput(isSearchActive) {
                 detectVerticalDragGestures { _, dragAmount ->
@@ -181,13 +197,18 @@ fun HomeView(
                         text = "$tasksCount task(s) remaining",
                         color = Color.LightGray,
                         fontSize = 14.sp,
-                        fontWeight = FontWeight.Medium
+                        fontWeight = FontWeight.Medium,
+                        modifier = Modifier.clickable { onTasksClick() }
                     )
                 }
 
-                Spacer(Modifier.height(64.dp))
+                Spacer(Modifier.height(32.dp))
+                
+                WidgetArea(selectedWidget)
 
-                if (favorites.isNotEmpty()) {
+                Spacer(Modifier.height(32.dp))
+
+                if (showFavorites && favorites.isNotEmpty()) {
                     Text(
                         text = "Favorites",
                         color = Color.DarkGray,
@@ -202,6 +223,10 @@ fun HomeView(
                             isFavorite = true,
                             onToggleFavorite = { onRemoveFavorite(app.packageName) },
                             onBlock = { duration -> onBlock(app.packageName, duration) },
+                            isProtected = protectedPackages.contains(app.packageName),
+                            onToggleProtected = { onToggleProtected(app.packageName) },
+                            onProtectedLaunch = onProtectedLaunch,
+                            iconOverride = getIcon(app.packageName),
                             showIcon = showIcons,
                             iconPackPackage = iconPackPackage
                         )
@@ -248,6 +273,10 @@ fun HomeView(
                             isFavorite = false,
                             onToggleFavorite = {}, // Not needed here
                             onBlock = { duration -> onBlock(app.packageName, duration) },
+                            isProtected = protectedPackages.contains(app.packageName),
+                            onToggleProtected = { onToggleProtected(app.packageName) },
+                            onProtectedLaunch = onProtectedLaunch,
+                            iconOverride = getIcon(app.packageName),
                             showIcon = showIcons,
                             iconPackPackage = iconPackPackage
                         )
@@ -352,7 +381,7 @@ fun YearDashboard(onDismiss: () -> Unit) {
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        containerColor = Color.Black.copy(alpha = 0.9f),
+        containerColor = Color.Black,
         title = {
             Text(
                 text = "${calendar.get(Calendar.YEAR)} Overview",
@@ -424,4 +453,41 @@ fun YearProgressBar(modifier: Modifier = Modifier) {
 fun currentTime(): Pair<String, String> {
     val now = Date()
     return timeFmt.format(now) to dateFmt.format(now)
+}
+
+@Composable
+fun WidgetArea(widgetType: String) {
+    val context = LocalContext.current
+    
+    when (widgetType) {
+        "battery" -> {
+            var batteryLevel by remember { mutableStateOf(0) }
+            val receiver = remember {
+                object : BroadcastReceiver() {
+                    override fun onReceive(context: Context?, intent: Intent?) {
+                        batteryLevel = intent?.getIntExtra(BatteryManager.EXTRA_LEVEL, 0) ?: 0
+                    }
+                }
+            }
+            DisposableEffect(context) {
+                context.registerReceiver(receiver, IntentFilter(Intent.ACTION_BATTERY_CHANGED))
+                onDispose { context.unregisterReceiver(receiver) }
+            }
+            Text("Battery: $batteryLevel%", color = Color.Gray, fontSize = 14.sp)
+        }
+        "alarm" -> {
+            val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as android.app.AlarmManager
+            val nextAlarm = alarmManager.nextAlarmClock?.triggerTime
+            val alarmText = if (nextAlarm != null) {
+                val d = Date(nextAlarm)
+                "Next Alarm: " + SimpleDateFormat("EEE HH:mm", Locale.getDefault()).format(d)
+            } else "No Alarms"
+            Text(alarmText, color = Color.Gray, fontSize = 14.sp)
+        }
+        "date" -> {
+            val fullDate = SimpleDateFormat("EEEE, MMMM d, yyyy", Locale.getDefault()).format(Date())
+            Text(fullDate, color = Color.Gray, fontSize = 14.sp)
+        }
+        else -> { /* None */ }
+    }
 }
