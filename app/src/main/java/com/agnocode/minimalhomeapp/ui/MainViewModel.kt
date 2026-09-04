@@ -7,6 +7,8 @@ import androidx.lifecycle.viewModelScope
 import androidx.work.*
 import com.agnocode.minimalhomeapp.data.AppRepository
 import com.agnocode.minimalhomeapp.data.worker.DailyBackupWorker
+import com.agnocode.minimalhomeapp.util.SearchCommandEngine
+import com.agnocode.minimalhomeapp.util.SmartAction
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.*
@@ -26,6 +28,10 @@ class MainViewModel @Inject constructor(
     var showFavorites = mutableStateOf(true)
     var autoSyncEnabled = mutableStateOf(false)
     var autoSyncUri = mutableStateOf<String?>(null)
+
+    val smartAction: StateFlow<SmartAction?> = universalSearchQuery
+        .map { SearchCommandEngine.parse(it) }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
 
     private val _resetToHomeEvent = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
     val resetToHomeEvent = _resetToHomeEvent.asSharedFlow()

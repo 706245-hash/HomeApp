@@ -39,6 +39,7 @@ import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.input.nestedscroll.NestedScrollSource
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import com.agnocode.minimalhomeapp.data.model.AppItem
+import com.agnocode.minimalhomeapp.util.SmartAction
 import kotlinx.coroutines.delay
 import java.text.SimpleDateFormat
 import java.util.*
@@ -75,6 +76,7 @@ fun HomeView(
     getIcon: (String) -> android.graphics.drawable.Drawable? = { null },
     usageStats: Map<String, Long> = emptyMap(),
     usageMode: String = "none",
+    smartAction: SmartAction? = null,
     onSearch: () -> Unit = {},
     showIcons: Boolean = false,
     iconPackPackage: String? = null
@@ -277,6 +279,18 @@ fun HomeView(
                 Spacer(Modifier.height(16.dp))
                 
                 LazyColumn(modifier = Modifier.weight(1f)) {
+                    if (smartAction != null) {
+                        item {
+                            SmartResultItem(
+                                action = smartAction,
+                                onClick = { 
+                                    onSearchToggle(false)
+                                    onSearchQueryChange("")
+                                }
+                            )
+                        }
+                    }
+
                     items(searchResults) { app ->
                         val usageMillis = usageStats[app.packageName] ?: 0L
                         val usageSubtitle = when (usageMode) {

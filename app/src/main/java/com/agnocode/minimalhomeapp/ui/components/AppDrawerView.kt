@@ -23,6 +23,7 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.agnocode.minimalhomeapp.data.model.AppItem
+import com.agnocode.minimalhomeapp.util.SmartAction
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -42,6 +43,7 @@ fun AppDrawerView(
     getIcon: (String) -> android.graphics.drawable.Drawable? = { null },
     usageStats: Map<String, Long> = emptyMap(),
     usageMode: String = "none",
+    smartAction: SmartAction? = null,
     onSearch: () -> Unit = {},
     showIcons: Boolean = false,
     iconPackPackage: String? = null
@@ -111,6 +113,15 @@ fun AppDrawerView(
                 modifier = Modifier.fillMaxSize(),
                 contentPadding = PaddingValues(vertical = 16.dp)
             ) {
+                if (smartAction != null) {
+                    item {
+                        SmartResultItem(
+                            action = smartAction,
+                            onClick = { onSearchQueryChange("") }
+                        )
+                    }
+                }
+
                 items(
                     items = apps,
                     key = { it.packageName }

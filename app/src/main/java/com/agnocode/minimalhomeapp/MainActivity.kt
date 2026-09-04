@@ -173,6 +173,8 @@ fun HomeScreen(
     val protectedPackages by focusModeViewModel.protectedPackagesFlow.collectAsStateWithLifecycle()
     val usageStats by appDrawerViewModel.usageStats.collectAsStateWithLifecycle()
     val usageMode by appDrawerViewModel.usageAwarenessModeFlow.collectAsStateWithLifecycle()
+    val smartActionHome by mainViewModel.smartAction.collectAsStateWithLifecycle()
+    val smartActionDrawer by appDrawerViewModel.smartAction.collectAsStateWithLifecycle()
 
     val createDocumentLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.CreateDocument("application/json")
@@ -284,6 +286,7 @@ fun HomeScreen(
                     showFavorites = mainViewModel.showFavorites.value,
                     usageStats = usageStats,
                     usageMode = usageMode,
+                    smartAction = smartActionHome,
                     onSearchQueryChange = { mainViewModel.universalSearchQuery.value = it },
                     onSearchToggle = { mainViewModel.isUniversalSearchActive.value = it },
                     onRemoveFavorite = { appDrawerViewModel.toggleFavorite(it) },
@@ -330,6 +333,7 @@ fun HomeScreen(
                 getIcon = { appDrawerViewModel.getIcon(it) },
                 usageStats = usageStats,
                 usageMode = usageMode,
+                smartAction = smartActionDrawer,
                 onSearch = {
                     if (visibleApps.isNotEmpty()) {
                         val intent = context.packageManager.getLaunchIntentForPackage(visibleApps[0].packageName)

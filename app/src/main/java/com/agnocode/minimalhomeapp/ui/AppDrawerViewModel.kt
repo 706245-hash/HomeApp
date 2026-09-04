@@ -13,6 +13,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.agnocode.minimalhomeapp.data.AppRepository
 import com.agnocode.minimalhomeapp.data.model.AppItem
+import com.agnocode.minimalhomeapp.util.SearchCommandEngine
+import com.agnocode.minimalhomeapp.util.SmartAction
 import com.agnocode.minimalhomeapp.util.isFuzzyMatch
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -47,6 +49,11 @@ class AppDrawerViewModel @Inject constructor(
 
     val availableIconPacks = mutableStateListOf<AppItem>()
     val searchQuery = MutableStateFlow("")
+
+    val smartAction: StateFlow<SmartAction?> = searchQuery
+        .map { SearchCommandEngine.parse(it) }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
+
     private val _usageStats = MutableStateFlow<Map<String, Long>>(emptyMap())
     val usageStats: StateFlow<Map<String, Long>> = _usageStats.asStateFlow()
     var usageAwarenessMode = mutableStateOf("none")
