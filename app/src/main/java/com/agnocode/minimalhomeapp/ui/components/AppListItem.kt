@@ -48,6 +48,7 @@ fun AppListItem(
     onToggleProtected: () -> Unit = {},
     onProtectedLaunch: (() -> Unit) -> Unit = { it() },
     iconOverride: android.graphics.drawable.Drawable? = null,
+    usageSubtitle: String? = null,
     showIcon: Boolean = false,
     iconPackPackage: String? = null
 ) {
@@ -109,12 +110,22 @@ fun AppListItem(
                 )
                 Spacer(Modifier.width(12.dp))
             }
-            Text(
-                text = app.label,
-                color = if (isProtected) Color.LightGray else Color.White,
-                fontSize = 18.sp,
-                fontWeight = FontWeight.Normal
-            )
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = app.label,
+                    color = if (isProtected) Color.LightGray else Color.White,
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Normal
+                )
+                if (usageSubtitle != null) {
+                    Text(
+                        text = usageSubtitle,
+                        color = Color.Gray,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Normal
+                    )
+                }
+            }
         }
 
         DropdownMenu(

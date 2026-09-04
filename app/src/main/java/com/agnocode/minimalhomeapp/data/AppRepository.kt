@@ -2,20 +2,19 @@ package com.agnocode.minimalhomeapp.data
 
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.app.usage.UsageStatsManager
+import android.content.Context
 import android.util.Log
+import java.util.Calendar
 import com.agnocode.minimalhomeapp.PreferenceManager
 import com.agnocode.minimalhomeapp.data.local.AppDatabase
 import com.agnocode.minimalhomeapp.data.local.dao.FocusModeDao
 import com.agnocode.minimalhomeapp.data.local.dao.NoteDao
 import com.agnocode.minimalhomeapp.data.FocusModeScheduler
-import com.agnocode.minimalhomeapp.data.local.entities.FocusModeEntity
-import com.agnocode.minimalhomeapp.data.local.entities.NoteEntity
-import com.agnocode.minimalhomeapp.data.local.entities.TaskEntity
-import com.agnocode.minimalhomeapp.data.model.AppItem
-import com.agnocode.minimalhomeapp.data.model.DailyNote
-import com.agnocode.minimalhomeapp.data.model.FocusMode
-import com.agnocode.minimalhomeapp.data.model.NoteTask
+import com.agnocode.minimalhomeapp.data.local.entities.*
+import com.agnocode.minimalhomeapp.data.model.*
 import androidx.sqlite.db.SimpleSQLiteQuery
+import com.google.gson.Gson
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.*
@@ -25,6 +24,7 @@ import javax.inject.Singleton
 
 @Singleton
 class AppRepository @Inject constructor(
+    @dagger.hilt.android.qualifiers.ApplicationContext private val context: Context,
     private val pm: PackageManager,
     private val prefs: PreferenceManager,
     private val db: AppDatabase,
@@ -32,6 +32,21 @@ class AppRepository @Inject constructor(
     private val focusModeDao: FocusModeDao,
     private val scheduler: FocusModeScheduler
 ) {
+    fun getUsageStats(): Map<String, Long> {
+        val usageStatsManager = context.getSystemService(Context.USAGE_STATS_SERVICE) as? UsageStatsManager
+            ?: return emptyMap()
+        
+        val endTime = System.currentTimeMillis()
+        val startTime = Calendar.getInstance().apply {
+            set(Calendar.HOUR_OF_DAY, 0)
+            set(Calendar.MINUTE, 0)
+            set(Calendar.SECOND, 0)
+            set(Calendar.MILLISECOND, 0)
+        }.timeInMillis
+        
+        val stats = usageStatsManager.queryUsageStats(UsageStatsManager.INTERVAL_DAILY, startTime, endTime)
+        return stats.associate { it.packageName to it.totalTimeInForeground }
+    }
     val favoriteAppsFlow: Flow<Set<String>?> = prefs.favoriteAppsFlow
     val blockedAppsFlow: Flow<Map<String, Long?>> = prefs.blockedAppsFlow
     val activeFocusModeFlow: Flow<String?> = prefs.activeFocusModeFlow
@@ -43,6 +58,9 @@ class AppRepository @Inject constructor(
     val biometricFocusLockFlow: Flow<Boolean> = prefs.biometricFocusLockFlow
     val selectedWidgetFlow: Flow<String> = prefs.selectedWidgetFlow
     val showFavoritesFlow: Flow<Boolean> = prefs.showFavoritesFlow
+    val usageAwarenessModeFlow: Flow<String> = prefs.usageAwarenessModeFlow
+    val autoSyncEnabledFlow: Flow<Boolean> = prefs.autoSyncEnabledFlow
+    val autoSyncUriFlow: Flow<String?> = prefs.autoSyncUriFlow
 
     @OptIn(ExperimentalCoroutinesApi::class)
     val dailyNotesFlow: Flow<Map<String, DailyNote>> = noteDao.getAllNotesWithTasks().map { notesWithTasks ->
@@ -206,9 +224,68 @@ class AppRepository @Inject constructor(
         prefs.setShowFavorites(show)
     }
 
+    suspend fun setUsageAwarenessMode(mode: String) {
+        prefs.setUsageAwarenessMode(mode)
+    }
+
+    suspend fun setAutoSyncEnabled(enabled: Boolean) {
+        prefs.setAutoSyncEnabled(enabled)
+    }
+
+    suspend fun setAutoSyncUri(uri: String?) {
+        prefs.setAutoSyncUri(uri)
+    }
+
     suspend fun saveDailyNotes(notes: Map<String, DailyNote>) {
         // Now handled via saveDailyNote individually, but for backward compat/migration:
         notes.values.forEach { saveDailyNote(it) }
+    }
+
+    suspend fun generateBackupJson(): String = withContext(Dispatchers.IO) {
+        val backup = BackupModel(
+            notes = noteDao.getAllNotesRaw(),
+            tasks = noteDao.getAllTasksRaw(),
+            focusModes = focusModeDao.getAllFocusModesRaw(),
+            focusModePackages = focusModeDao.getAllPackagesRaw().map { 
+                FocusModePackageBackup(it.modeName, it.packageName) 
+            },
+            preferences = prefs.getAllPreferencesForBackup()
+        )
+        Gson().toJson(backup)
+    }
+
+    suspend fun restoreFromBackupJson(json: String): Boolean = withContext(Dispatchers.IO) {
+        try {
+            val backup = Gson().fromJson(json, BackupModel::class.java)
+            if (backup == null || backup.version < 1) return@withContext false
+            
+            // Start restoration
+            db.runInTransaction {
+                // We use runBlocking here because we are inside a Room transaction callback which is synchronous
+                kotlinx.coroutines.runBlocking {
+                    // Clear current data
+                    noteDao.deleteAllNotes()
+                    noteDao.deleteAllTasks()
+                    focusModeDao.deleteAllFocusModes()
+                    focusModeDao.deleteAllPackages()
+                    
+                    // Insert backup data
+                    backup.notes.forEach { noteDao.insertNote(it) }
+                    backup.tasks.forEach { noteDao.insertTask(it) }
+                    backup.focusModes.forEach { focusModeDao.insertFocusMode(it) }
+                    backup.focusModePackages.forEach { 
+                        focusModeDao.insertPackage(FocusModePackageEntity(it.modeName, it.packageName))
+                    }
+                    
+                    // Restore preferences
+                    prefs.restorePreferencesFromBackup(backup.preferences)
+                }
+            }
+            true
+        } catch (e: Exception) {
+            Log.e("AppRepository", "Restore failed", e)
+            false
+        }
     }
 
     suspend fun getAvailableIconPacks(): List<AppItem> = withContext(Dispatchers.Default) {

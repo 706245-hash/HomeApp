@@ -47,6 +47,9 @@ class AppDrawerViewModel @Inject constructor(
 
     val availableIconPacks = mutableStateListOf<AppItem>()
     val searchQuery = MutableStateFlow("")
+    private val _usageStats = MutableStateFlow<Map<String, Long>>(emptyMap())
+    val usageStats: StateFlow<Map<String, Long>> = _usageStats.asStateFlow()
+    var usageAwarenessMode = mutableStateOf("none")
 
     val favoriteAppsFlow: StateFlow<Set<String>?> = repository.favoriteAppsFlow.stateIn(
         viewModelScope, SharingStarted.WhileSubscribed(5000), null
@@ -62,6 +65,10 @@ class AppDrawerViewModel @Inject constructor(
 
     val blockedAppsFlow: StateFlow<Map<String, Long?>> = repository.blockedAppsFlow.stateIn(
         viewModelScope, SharingStarted.WhileSubscribed(5000), emptyMap()
+    )
+
+    val usageAwarenessModeFlow: StateFlow<String> = repository.usageAwarenessModeFlow.stateIn(
+        viewModelScope, SharingStarted.WhileSubscribed(5000), "none"
     )
 
     @OptIn(ExperimentalCoroutinesApi::class)
@@ -115,7 +122,40 @@ class AppDrawerViewModel @Inject constructor(
         collectFavorites()
         collectThemeSettings()
         collectBlockedApps()
+        collectUsageSettings()
         refreshIconPacks()
+        startUsageMonitor()
+    }
+
+    private fun collectUsageSettings() {
+        viewModelScope.launch {
+            usageAwarenessModeFlow.collect { mode ->
+                usageAwarenessMode.value = mode
+                if (mode != "none") refreshUsageStats()
+            }
+        }
+    }
+
+    private fun startUsageMonitor() {
+        viewModelScope.launch {
+            while (true) {
+                if (usageAwarenessMode.value != "none") {
+                    refreshUsageStats()
+                }
+                delay(30000) // Refresh usage every 30 seconds
+            }
+        }
+    }
+
+    fun refreshUsageStats() {
+        val stats = repository.getUsageStats()
+        _usageStats.value = stats
+    }
+
+    fun setUsageAwarenessMode(mode: String) {
+        viewModelScope.launch {
+            repository.setUsageAwarenessMode(mode)
+        }
     }
 
     fun refreshApps() {

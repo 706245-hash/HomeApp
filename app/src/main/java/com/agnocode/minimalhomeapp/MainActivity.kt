@@ -7,6 +7,12 @@ import android.content.IntentFilter
 import android.os.Build
 import android.os.Bundle
 import android.util.Log
+import android.widget.Toast
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.fragment.app.FragmentActivity
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
@@ -165,6 +171,69 @@ fun HomeScreen(
     val allApps by appDrawerViewModel.apps.collectAsStateWithLifecycle()
     val blockedApps by focusModeViewModel.blockedAppsFlow.collectAsStateWithLifecycle()
     val protectedPackages by focusModeViewModel.protectedPackagesFlow.collectAsStateWithLifecycle()
+    val usageStats by appDrawerViewModel.usageStats.collectAsStateWithLifecycle()
+    val usageMode by appDrawerViewModel.usageAwarenessModeFlow.collectAsStateWithLifecycle()
+
+    val createDocumentLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.CreateDocument("application/json")
+    ) { uri ->
+        uri?.let {
+            scope.launch {
+                try {
+                    val json = mainViewModel.exportBackup()
+                    context.contentResolver.openOutputStream(it)?.use { stream ->
+                        stream.write(json.toByteArray())
+                    }
+                    Toast.makeText(context, "Backup saved successfully", Toast.LENGTH_SHORT).show()
+                } catch (e: Exception) {
+                    Toast.makeText(context, "Backup failed: ${e.message}", Toast.LENGTH_SHORT).show()
+                }
+            }
+        }
+    }
+
+    val openDocumentLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.OpenDocument()
+    ) { uri ->
+        uri?.let {
+            scope.launch {
+                try {
+                    val json = context.contentResolver.openInputStream(it)?.bufferedReader()?.use { reader ->
+                        reader.readText()
+                    }
+                    if (json != null) {
+                        val success = mainViewModel.importBackup(json)
+                        if (success) {
+                            Toast.makeText(context, "Restore successful", Toast.LENGTH_SHORT).show()
+                            // No need to restart as state flows are reactive
+                        } else {
+                            Toast.makeText(context, "Restore failed: Invalid file", Toast.LENGTH_SHORT).show()
+                        }
+                    }
+                } catch (e: Exception) {
+                    Toast.makeText(context, "Restore failed: ${e.message}", Toast.LENGTH_SHORT).show()
+                }
+            }
+        }
+    }
+
+    val syncDocumentLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.OpenDocument()
+    ) { uri ->
+        uri?.let {
+            // Take persistent permission so we can write to this file in the background
+            try {
+                context.contentResolver.takePersistableUriPermission(
+                    it,
+                    Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION
+                )
+                mainViewModel.setAutoSyncUri(it.toString())
+                Toast.makeText(context, "Auto-sync location set", Toast.LENGTH_SHORT).show()
+            } catch (e: Exception) {
+                Toast.makeText(context, "Failed to set sync location: ${e.message}", Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
 
     fun authenticate(onSuccess: () -> Unit) {
         if (BiometricHelper.canAuthenticate(context as FragmentActivity)) {
@@ -213,6 +282,8 @@ fun HomeScreen(
                     isVisible = pagerState.currentPage == 1,
                     selectedWidget = mainViewModel.selectedWidget.value,
                     showFavorites = mainViewModel.showFavorites.value,
+                    usageStats = usageStats,
+                    usageMode = usageMode,
                     onSearchQueryChange = { mainViewModel.universalSearchQuery.value = it },
                     onSearchToggle = { mainViewModel.isUniversalSearchActive.value = it },
                     onRemoveFavorite = { appDrawerViewModel.toggleFavorite(it) },
@@ -257,6 +328,8 @@ fun HomeScreen(
                 onToggleProtected = { focusModeViewModel.toggleProtectedPackage(it) },
                 onProtectedLaunch = { authenticate(it) },
                 getIcon = { appDrawerViewModel.getIcon(it) },
+                usageStats = usageStats,
+                usageMode = usageMode,
                 onSearch = {
                     if (visibleApps.isNotEmpty()) {
                         val intent = context.packageManager.getLaunchIntentForPackage(visibleApps[0].packageName)
@@ -300,7 +373,22 @@ fun HomeScreen(
             onSetBiometricFocusLock = { focusModeViewModel.setBiometricFocusLock(it) },
             availableIconPacks = appDrawerViewModel.availableIconPacks,
             selectedIconPack = appDrawerViewModel.iconPackPackage.value,
-            onSetIconPack = { appDrawerViewModel.setIconPack(it) }
+            onSetIconPack = { appDrawerViewModel.setIconPack(it) },
+            usageAwarenessMode = usageMode,
+            onSetUsageAwarenessMode = { appDrawerViewModel.setUsageAwarenessMode(it) },
+            onBackup = {
+                val timestamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(Date())
+                createDocumentLauncher.launch("minimal_home_backup_$timestamp.json")
+            },
+            onRestore = {
+                openDocumentLauncher.launch(arrayOf("application/json"))
+            },
+            autoSyncEnabled = mainViewModel.autoSyncEnabled.value,
+            onSetAutoSyncEnabled = { mainViewModel.setAutoSyncEnabled(it) },
+            autoSyncUri = mainViewModel.autoSyncUri.value,
+            onSelectSyncFile = {
+                syncDocumentLauncher.launch(arrayOf("application/json"))
+            }
         )
     }
 }

@@ -18,6 +18,12 @@ interface NoteDao {
     @Query("SELECT * FROM notes WHERE date = :date")
     suspend fun getNoteByDate(date: String): NoteEntity?
 
+    @Query("SELECT * FROM notes")
+    suspend fun getAllNotesRaw(): List<NoteEntity>
+
+    @Query("SELECT * FROM tasks")
+    suspend fun getAllTasksRaw(): List<TaskEntity>
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertNote(note: NoteEntity)
 
@@ -48,4 +54,10 @@ interface NoteDao {
 
     @Query("DELETE FROM tasks WHERE noteDate = :date")
     suspend fun deleteTasksForNote(date: String)
+
+    @Query("DELETE FROM notes")
+    suspend fun deleteAllNotes()
+
+    @Query("DELETE FROM tasks")
+    suspend fun deleteAllTasks()
 }

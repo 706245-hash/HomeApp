@@ -40,6 +40,8 @@ fun AppDrawerView(
     onToggleProtected: (String) -> Unit = {},
     onProtectedLaunch: (() -> Unit) -> Unit = { it() },
     getIcon: (String) -> android.graphics.drawable.Drawable? = { null },
+    usageStats: Map<String, Long> = emptyMap(),
+    usageMode: String = "none",
     onSearch: () -> Unit = {},
     showIcons: Boolean = false,
     iconPackPackage: String? = null
@@ -113,6 +115,13 @@ fun AppDrawerView(
                     items = apps,
                     key = { it.packageName }
                 ) { app ->
+                    val usageMillis = usageStats[app.packageName] ?: 0L
+                    val usageSubtitle = when (usageMode) {
+                        "time" -> if (usageMillis > 0) formatUsageTime(usageMillis) else null
+                        "percentage" -> if (usageMillis > 0) formatUsagePercentage(usageMillis) else null
+                        else -> null
+                    }
+                    
                     Box(modifier = Modifier.animateItem()) {
                         AppListItem(
                             app = app,
@@ -123,6 +132,7 @@ fun AppDrawerView(
                             onToggleProtected = { onToggleProtected(app.packageName) },
                             onProtectedLaunch = onProtectedLaunch,
                             iconOverride = getIcon(app.packageName),
+                            usageSubtitle = usageSubtitle,
                             showIcon = showIcons,
                             iconPackPackage = iconPackPackage
                         )
@@ -131,4 +141,16 @@ fun AppDrawerView(
             }
         }
     }
+}
+
+private fun formatUsageTime(millis: Long): String {
+    val mins = (millis / 60000)
+    val hrs = mins / 60
+    return if (hrs > 0) "${hrs}h ${mins % 60}m today" else "${mins}m today"
+}
+
+private fun formatUsagePercentage(millis: Long): String {
+    val awakeMillis = 16 * 60 * 60 * 1000L // Assume 16 hours awake
+    val pct = (millis.toFloat() / awakeMillis * 100).toInt()
+    return if (pct > 0) "$pct% of your day" else "< 1% of your day"
 }

@@ -3,6 +3,7 @@ package com.agnocode.minimalhomeapp.ui.components
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.provider.Settings
+import androidx.compose.foundation.BorderStroke
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -57,7 +58,15 @@ fun SettingsDialog(
     onSetBiometricFocusLock: (Boolean) -> Unit,
     availableIconPacks: List<AppItem>,
     selectedIconPack: String?,
-    onSetIconPack: (String?) -> Unit
+    onSetIconPack: (String?) -> Unit,
+    usageAwarenessMode: String,
+    onSetUsageAwarenessMode: (String) -> Unit,
+    onBackup: () -> Unit,
+    onRestore: () -> Unit,
+    autoSyncEnabled: Boolean,
+    onSetAutoSyncEnabled: (Boolean) -> Unit,
+    autoSyncUri: String?,
+    onSelectSyncFile: () -> Unit
 ) {
     val context = LocalContext.current
     var isDefault by remember { mutableStateOf(false) }
@@ -287,6 +296,50 @@ fun SettingsDialog(
                             }
                         }
                     }
+
+                    item {
+                        SettingsRow(label = "Usage Awareness") {
+                            var showUsageMenu by remember { mutableStateOf(false) }
+                            Box {
+                                val currentLabel = when (usageAwarenessMode) {
+                                    "time" -> "Time spent"
+                                    "percentage" -> "% of day"
+                                    else -> "None"
+                                }
+                                Text(
+                                    currentLabel,
+                                    color = Color.LightGray,
+                                    modifier = Modifier.clickable { showUsageMenu = true }.padding(8.dp)
+                                )
+                                DropdownMenu(
+                                    expanded = showUsageMenu,
+                                    onDismissRequest = { showUsageMenu = false },
+                                    modifier = Modifier
+                                        .background(Color.Black)
+                                        .border(1.dp, Color.White, MaterialTheme.shapes.extraSmall)
+                                ) {
+                                    val options = listOf(
+                                        "none" to "None",
+                                        "time" to "Time spent",
+                                        "percentage" to "% of day"
+                                    )
+                                    options.forEach { (id, label) ->
+                                        DropdownMenuItem(
+                                            text = { Text(label, color = Color.White) },
+                                            onClick = {
+                                                if (id != "none") {
+                                                    val intent = Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS)
+                                                    context.startActivity(intent)
+                                                }
+                                                onSetUsageAwarenessMode(id)
+                                                showUsageMenu = false
+                                            }
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
                 }
 
                 item { Divider() }
@@ -403,6 +456,86 @@ fun SettingsDialog(
                             fontSize = 12.sp,
                             modifier = Modifier.padding(start = 32.dp, bottom = 16.dp, end = 24.dp)
                         )
+                    }
+                }
+
+                item { Divider() }
+
+                // Section: Backup & Restore
+                item {
+                    var backupExpanded by remember { mutableStateOf(false) }
+                    SettingsSectionHeader(
+                        title = "Backup & Restore",
+                        isExpanded = backupExpanded,
+                        onToggle = { backupExpanded = !backupExpanded }
+                    )
+                    
+                    if (backupExpanded) {
+                        Column(modifier = Modifier.padding(start = 32.dp, bottom = 16.dp, end = 24.dp)) {
+                            Text(
+                                "Save your notes, focus modes, and settings to a file or restore from a previous backup.",
+                                color = Color.Gray,
+                                fontSize = 12.sp
+                            )
+                            Spacer(Modifier.height(16.dp))
+                            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                                Button(
+                                    onClick = onBackup,
+                                    modifier = Modifier.weight(1f),
+                                    colors = ButtonDefaults.buttonColors(containerColor = Color.White, contentColor = Color.Black),
+                                    shape = MaterialTheme.shapes.small
+                                ) {
+                                    Text("BACKUP")
+                                }
+                                Button(
+                                    onClick = onRestore,
+                                    modifier = Modifier.weight(1f),
+                                    colors = ButtonDefaults.buttonColors(containerColor = Color.DarkGray, contentColor = Color.White),
+                                    shape = MaterialTheme.shapes.small,
+                                    border = BorderStroke(1.dp, Color.Gray)
+                                ) {
+                                    Text("RESTORE")
+                                }
+                            }
+                            
+                            Spacer(Modifier.height(16.dp))
+                            
+                            SettingsRow(label = "Auto-Sync (Daily)") {
+                                Switch(
+                                    checked = autoSyncEnabled,
+                                    onCheckedChange = onSetAutoSyncEnabled,
+                                    colors = SwitchDefaults.colors(
+                                        checkedThumbColor = Color.Black,
+                                        checkedTrackColor = Color.White,
+                                        uncheckedThumbColor = Color.Gray,
+                                        uncheckedTrackColor = Color.DarkGray
+                                    )
+                                )
+                            }
+                            
+                            if (autoSyncEnabled) {
+                                TextButton(
+                                    onClick = onSelectSyncFile,
+                                    modifier = Modifier.fillMaxWidth(),
+                                    contentPadding = PaddingValues(0.dp)
+                                ) {
+                                    Column(modifier = Modifier.fillMaxWidth()) {
+                                        Text(
+                                            text = if (autoSyncUri != null) "Syncing to selected file" else "Select file to sync",
+                                            color = if (autoSyncUri != null) Color.White else Color.Gray,
+                                            fontSize = 14.sp
+                                        )
+                                        if (autoSyncUri != null) {
+                                            Text(
+                                                text = "Tap to change file",
+                                                color = Color.Gray,
+                                                fontSize = 10.sp
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+                        }
                     }
                 }
             }

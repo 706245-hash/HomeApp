@@ -5,10 +5,12 @@ import android.util.Base64
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.*
 import androidx.datastore.preferences.preferencesDataStore
+import com.agnocode.minimalhomeapp.data.model.AppPreferencesBackup
 import com.agnocode.minimalhomeapp.data.model.DailyNote
 import com.agnocode.minimalhomeapp.data.model.FocusMode
 import com.agnocode.minimalhomeapp.data.model.NoteTask
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 
 private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "settings")
@@ -31,6 +33,9 @@ class PreferenceManager(private val context: Context) {
         val SELECTED_WIDGET = stringPreferencesKey("selected_widget")
         val SHOW_FAVORITES = booleanPreferencesKey("show_favorites")
         val LAST_MAINTENANCE_TIME = longPreferencesKey("last_maintenance_time")
+        val USAGE_AWARENESS_MODE = stringPreferencesKey("usage_awareness_mode")
+        val AUTO_SYNC_ENABLED = booleanPreferencesKey("auto_sync_enabled")
+        val AUTO_SYNC_URI = stringPreferencesKey("auto_sync_uri")
     }
 
     private fun encode(s: String): String = Base64.encodeToString(s.toByteArray(), Base64.NO_WRAP)
@@ -106,6 +111,18 @@ class PreferenceManager(private val context: Context) {
 
     val lastMaintenanceTimeFlow: Flow<Long> = context.dataStore.data.map { preferences ->
         preferences[LAST_MAINTENANCE_TIME] ?: 0L
+    }
+
+    val usageAwarenessModeFlow: Flow<String> = context.dataStore.data.map { preferences ->
+        preferences[USAGE_AWARENESS_MODE] ?: "none"
+    }
+
+    val autoSyncEnabledFlow: Flow<Boolean> = context.dataStore.data.map { preferences ->
+        preferences[AUTO_SYNC_ENABLED] ?: false
+    }
+
+    val autoSyncUriFlow: Flow<String?> = context.dataStore.data.map { preferences ->
+        preferences[AUTO_SYNC_URI]
     }
 
     val dailyNotesFlow: Flow<Map<String, DailyNote>> = context.dataStore.data.map { preferences ->
@@ -228,6 +245,28 @@ class PreferenceManager(private val context: Context) {
         }
     }
 
+    suspend fun setUsageAwarenessMode(mode: String) {
+        context.dataStore.edit { preferences ->
+            preferences[USAGE_AWARENESS_MODE] = mode
+        }
+    }
+
+    suspend fun setAutoSyncEnabled(enabled: Boolean) {
+        context.dataStore.edit { preferences ->
+            preferences[AUTO_SYNC_ENABLED] = enabled
+        }
+    }
+
+    suspend fun setAutoSyncUri(uri: String?) {
+        context.dataStore.edit { preferences ->
+            if (uri == null) {
+                preferences.remove(AUTO_SYNC_URI)
+            } else {
+                preferences[AUTO_SYNC_URI] = uri
+            }
+        }
+    }
+
     suspend fun saveDailyNotes(notes: Map<String, DailyNote>) {
         context.dataStore.edit { preferences ->
             val data = notes.values.joinToString("[NOTE]") { note ->
@@ -243,6 +282,45 @@ class PreferenceManager(private val context: Context) {
             preferences.remove(DAILY_NOTES)
             preferences.remove(FOCUS_MODES)
             preferences.remove(BLOCKED_EXPIRY) // Will be handled by Room or cleaned up
+        }
+    }
+
+    suspend fun getAllPreferencesForBackup(): AppPreferencesBackup {
+        val prefs = context.dataStore.data.first()
+        return AppPreferencesBackup(
+            favoriteApps = prefs[FAVORITE_APPS] ?: emptySet(),
+            protectedPackages = prefs[PROTECTED_PACKAGES] ?: emptySet(),
+            blockedApps = blockedAppsFlow.first(),
+            iconPackPackage = prefs[ICON_PACK_PACKAGE],
+            showIcons = prefs[SHOW_ICONS] ?: false,
+            dndSyncEnabled = prefs[DND_SYNC_ENABLED] ?: false,
+            biometricFocusLock = prefs[BIOMETRIC_FOCUS_LOCK] ?: false,
+            selectedWidget = prefs[SELECTED_WIDGET] ?: "none",
+            showFavorites = prefs[SHOW_FAVORITES] ?: true
+        )
+    }
+
+    suspend fun restorePreferencesFromBackup(backup: AppPreferencesBackup) {
+        context.dataStore.edit { preferences ->
+            preferences[FAVORITE_APPS] = backup.favoriteApps
+            preferences[PROTECTED_PACKAGES] = backup.protectedPackages
+            
+            // Re-encode blocked apps
+            val expiryString = backup.blockedApps.map { "${it.key}|${it.value ?: "null"}" }.joinToString(";")
+            preferences[BLOCKED_APPS] = backup.blockedApps.keys
+            preferences[BLOCKED_EXPIRY] = expiryString
+            
+            if (backup.iconPackPackage != null) {
+                preferences[ICON_PACK_PACKAGE] = backup.iconPackPackage
+            } else {
+                preferences.remove(ICON_PACK_PACKAGE)
+            }
+            
+            preferences[SHOW_ICONS] = backup.showIcons
+            preferences[DND_SYNC_ENABLED] = backup.dndSyncEnabled
+            preferences[BIOMETRIC_FOCUS_LOCK] = backup.biometricFocusLock
+            preferences[SELECTED_WIDGET] = backup.selectedWidget
+            preferences[SHOW_FAVORITES] = backup.showFavorites
         }
     }
 }

@@ -13,6 +13,12 @@ interface FocusModeDao {
     @Query("SELECT packageName FROM focus_mode_packages WHERE modeName = :modeName")
     fun getPackagesForMode(modeName: String): Flow<List<String>>
 
+    @Query("SELECT * FROM focus_mode_packages")
+    suspend fun getAllPackagesRaw(): List<FocusModePackageEntity>
+
+    @Query("SELECT * FROM focus_modes")
+    suspend fun getAllFocusModesRaw(): List<FocusModeEntity>
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertFocusMode(mode: FocusModeEntity)
 
@@ -24,6 +30,12 @@ interface FocusModeDao {
 
     @Query("DELETE FROM focus_mode_packages WHERE modeName = :modeName")
     suspend fun deletePackagesForMode(modeName: String)
+
+    @Query("DELETE FROM focus_modes")
+    suspend fun deleteAllFocusModes()
+
+    @Query("DELETE FROM focus_mode_packages")
+    suspend fun deleteAllPackages()
 
     @Transaction
     suspend fun saveFocusMode(mode: FocusModeEntity, packages: Set<String>) {
