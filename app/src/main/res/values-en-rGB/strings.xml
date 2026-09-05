@@ -1,0 +1,14 @@
+<resources>
+    <!-- Customization Sections -->
+    <string name="settings_section_customization">Customisation</string>
+
+    <!-- Customization Settings -->
+    <string name="custom_show_favorites">Show Favourites</string>
+
+    <!-- Home View -->
+    <string name="home_favorites">Favourites</string>
+
+    <!-- App Drawer & List -->
+    <string name="app_menu_remove_favorite">Remove from Favourites</string>
+    <string name="app_menu_add_favorite">Add to Favourites</string>
+</resources>

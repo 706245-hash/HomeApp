@@ -1,0 +1,155 @@
+<resources>
+    <string name="app_name">Home App</string>
+
+    <!-- General -->
+    <string name="save">ENREGISTRER</string>
+    <string name="undo">ANNULER</string>
+    <string name="edit">MODIFIER</string>
+    <string name="delete">SUPPRIMER</string>
+    <string name="cancel">ANNULER</string>
+    <string name="ok">OK</string>
+    <string name="close">FERMER</string>
+    <string name="settings">Paramètres</string>
+    <string name="settings_expand">Développer</string>
+    <string name="settings_collapse">Réduire</string>
+    <string name="unlock">DÉVERROUILLER</string>
+    <string name="block">BLOQUER</string>
+
+    <!-- Notes View -->
+    <string name="notes_title_today">Note d\'aujourd\'hui</string>
+    <string name="notes_back_to_today">Retour à aujourd\'hui</string>
+    <string name="notes_history">Historique</string>
+    <string name="notes_add_task">Ajouter une tâche</string>
+    <string name="notes_placeholder">Tapez vos pensées ici&#8230;</string>
+    <string name="notes_task_placeholder">Tapez votre tâche ici&#8230;</string>
+    <string name="notes_delete_task">Supprimer la tâche</string>
+    <string name="notes_edit_history_title">Modifier l\'historique ?</string>
+    <string name="notes_edit_history_message">Modifier le passé peut changer vos perspectives. Continuer ?</string>
+    <string name="notes_delete_task_title">Supprimer la tâche ?</string>
+    <string name="notes_delete_task_message">Cette action est irréversible.</string>
+    <string name="notes_weekly_performance">Performance hebdomadaire</string>
+    <string name="notes_avg_completion">Complétion moyenne : </string>
+
+    <!-- Settings Sections -->
+    <string name="settings_section_system">Système</string>
+    <string name="settings_section_customization">Personnalisation</string>
+    <string name="settings_section_focus">Modes de concentration</string>
+    <string name="settings_section_security">Sécurité \u0026 Blocage</string>
+    <string name="settings_section_backup">Sauvegarde \u0026 Restauration</string>
+
+    <!-- System Settings -->
+    <string name="system_set_default">Définir comme lanceur par défaut</string>
+    <string name="system_is_default">L\'application est définie par défaut</string>
+
+    <!-- Customization Settings -->
+    <string name="custom_icons">Icônes</string>
+    <string name="custom_show_icons">Afficher les icônes d\'applications</string>
+    <string name="custom_monochrome">Icônes monochromes</string>
+    <string name="custom_icon_pack">Pack d\'icônes</string>
+    <string name="custom_show_favorites">Afficher les favoris</string>
+    <string name="custom_usage_awareness">Conscience d\'utilisation</string>
+    <string name="custom_accent_style">Style d\'accentuation</string>
+    <string name="custom_default">Par défaut</string>
+    <string name="usage_permission_title">Permission requise</string>
+    <string name="usage_permission_msg">Pour afficher l\'utilisation de vos applications, Home App a besoin d\'accéder à vos statistiques d\'utilisation. Ces données ne quittent jamais votre appareil.</string>
+    <string name="usage_permission_grant">ACCORDER L\'ACCÈS</string>
+    <string name="usage_mode_none">Aucun</string>
+    <string name="usage_mode_time">Temps passé</string>
+    <string name="usage_mode_pct">%% de la journée</string>
+    <string name="accent_white">Blanc majestueux</string>
+    <string name="accent_gold">Or royal</string>
+    <string name="accent_emerald">Émeraude profonde</string>
+    <string name="accent_blue">Bleu minimaliste</string>
+    <string name="accent_rose">Rose doux</string>
+
+    <!-- Focus Settings -->
+    <string name="focus_add">Ajouter</string>
+    <string name="focus_dnd_sync">Synchroniser avec Ne pas déranger</string>
+    <string name="focus_none_defined">Aucun mode de concentration défini</string>
+    <string name="focus_on">ON</string>
+    <string name="focus_off">OFF</string>
+    <string name="focus_new_title">Nouveau mode de concentration</string>
+    <string name="focus_edit_title">Modifier le mode</string>
+    <string name="focus_name_label">Nom</string>
+    <string name="focus_schedule">Programme</string>
+    <string name="focus_start">Début</string>
+    <string name="focus_end">Fin</string>
+    <string name="focus_clear_schedule">Effacer le programme</string>
+    <string name="focus_allowed_apps">Applications autorisées (%d)</string>
+    <string name="focus_create">CRÉER</string>
+    <string name="focus_select_time">Sélectionner l\'heure</string>
+    <string name="focus_manual">Manuel</string>
+    <string name="focus_summary_format">%1$d applications \u2022 %2$s</string>
+
+    <!-- Security \u0026 Blocage -->
+    <string name="security_biometric_lock">Protection biométrique de la concentration</string>
+    <string name="security_biometric_desc">Nécessite une authentification pour désactiver le mode de concentration si les tâches sont incomplètes.</string>
+    <string name="security_blocked_apps">Applications bloquées</string>
+    <string name="security_no_blocked">Aucune application bloquée</string>
+    <string name="security_stealth_apps">Applications furtives</string>
+    <string name="security_visible">VISIBLE</string>
+    <string name="security_forever">Pour toujours</string>
+    <string name="security_expired">Expiré</string>
+    <string name="security_remaining_format">%1$dh %2$dm restants</string>
+    <string name="security_mins_remaining_format">%d m restants</string>
+    <string name="security_unblock">DÉBLOQUER</string>
+
+    <!-- Backup Settings -->
+    <string name="backup_desc">Enregistrez vos notes, modes de concentration et paramètres dans un fichier ou restaurez à partir d\'une sauvegarde précédente.</string>
+    <string name="backup_button">SAUVEGARDE</string>
+    <string name="restore_button">RESTAURER</string>
+    <string name="backup_auto_sync">Synchronisation auto (quotidienne)</string>
+    <string name="backup_syncing_to">Synchronisation vers le fichier sélectionné</string>
+    <string name="backup_select_file">Sélectionner le fichier à synchroniser</string>
+    <string name="backup_change_file">Appuyer pour changer de fichier</string>
+
+    <!-- Home View -->
+    <string name="home_tasks_remaining">%d tâche(s) restante(s)</string>
+    <string name="home_favorites">Favoris</string>
+    <string name="home_search_placeholder">Rechercher n\'importe quoi&#8230;</string>
+    <string name="home_notes_section">Notes</string>
+    <string name="home_search_web">Rechercher sur le web pour \"%s\"</string>
+    <string name="home_phone">Téléphone</string>
+    <string name="home_camera">Appareil photo</string>
+    <string name="home_year_overview">Aperçu de %d</string>
+    <string name="home_year_lived_prefix">Vous avez vécu </string>
+    <string name="home_year_lived_suffix"> de cette année.</string>
+    <string name="home_days_remaining">%d jours restants pour que ça compte.</string>
+
+    <!-- App Drawer & List -->
+    <string name="drawer_search_placeholder">Rechercher des applications&#8230;</string>
+    <string name="app_menu_remove_favorite">Retirer des favoris</string>
+    <string name="app_menu_add_favorite">Ajouter aux favoris</string>
+    <string name="app_menu_remove_shield">Retirer le bouclier biométrique</string>
+    <string name="app_menu_add_shield">Ajouter un bouclier biométrique</string>
+    <string name="app_menu_remove_stealth">Retirer de la furtivité</string>
+    <string name="app_menu_add_stealth">Ajouter à la furtivité</string>
+    <string name="app_menu_block">Bloquer l\'application</string>
+    <string name="app_menu_info">Infos application</string>
+    <string name="app_menu_uninstall">Désinstaller</string>
+    <string name="app_block_15m">15 minutes</string>
+    <string name="app_block_1h">1 heure</string>
+    <string name="app_block_8h">8 heures</string>
+    <string name="app_block_24h">24 heures</string>
+    <string name="app_block_custom">Durée personnalisée&#8230;</string>
+    <string name="app_block_until_unblocked">Jusqu\'au déblocage</string>
+    <string name="app_block_duration_title">Durée du blocage</string>
+    <string name="app_block_minutes_label">Minutes</string>
+
+    <!-- Usage Stats -->
+    <string name="usage_time_format">%1$dh %2$dm aujourd\'hui</string>
+    <string name="usage_mins_format">%d m aujourd\'hui</string>
+    <string name="usage_pct_format">%d%% de votre journée</string>
+    <string name="usage_pct_low">&lt; 1%% de votre journée</string>
+
+    <!-- Main Activity / System -->
+    <string name="backup_success">Sauvegarde réussie</string>
+    <string name="backup_failed">Échec de la sauvegarde : %s</string>
+    <string name="restore_success">Restauration réussie</string>
+    <string name="restore_failed_invalid">Échec de la restauration : fichier non valide</string>
+    <string name="restore_failed">Échec de la restauration : %s</string>
+    <string name="sync_location_set">Emplacement de synchronisation auto défini</string>
+    <string name="sync_location_failed">Échec de la définition de l\'emplacement : %s</string>
+    <string name="auth_required">Authentification requise</string>
+    <string name="auth_proceed">Veuillez vous authentifier pour continuer</string>
+</resources>

@@ -1,0 +1,155 @@
+<resources>
+    <string name="app_name">Home App</string>
+
+    <!-- General -->
+    <string name="save">保存</string>
+    <string name="undo">元に戻す</string>
+    <string name="edit">編集</string>
+    <string name="delete">削除</string>
+    <string name="cancel">キャンセル</string>
+    <string name="ok">OK</string>
+    <string name="close">閉じる</string>
+    <string name="settings">設定</string>
+    <string name="settings_expand">展開</string>
+    <string name="settings_collapse">折りたたむ</string>
+    <string name="unlock">ロック解除</string>
+    <string name="block">ブロック</string>
+
+    <!-- Notes View -->
+    <string name="notes_title_today">今日のメモ</string>
+    <string name="notes_back_to_today">今日に戻る</string>
+    <string name="notes_history">履歴</string>
+    <string name="notes_add_task">タスクを追加</string>
+    <string name="notes_placeholder">ここに考えを入力してください&#8230;</string>
+    <string name="notes_task_placeholder">ここにタスクを入力してください&#8230;</string>
+    <string name="notes_delete_task">タスクを削除</string>
+    <string name="notes_edit_history_title">履歴を編集しますか？</string>
+    <string name="notes_edit_history_message">過去を変更すると、洞察が変わる可能性があります。続行しますか？</string>
+    <string name="notes_delete_task_title">タスクを削除しますか？</string>
+    <string name="notes_delete_task_message">この操作は取り消せません。</string>
+    <string name="notes_weekly_performance">週間のパフォーマンス</string>
+    <string name="notes_avg_completion">平均完了率： </string>
+
+    <!-- Settings Sections -->
+    <string name="settings_section_system">システム</string>
+    <string name="settings_section_customization">カスタマイズ</string>
+    <string name="settings_section_focus">集中モード</string>
+    <string name="settings_section_security">セキュリティ \u0026 ブロック</string>
+    <string name="settings_section_backup">バックアップ \u0026 復元</string>
+
+    <!-- System Settings -->
+    <string name="system_set_default">デフォルトのランチャーに設定</string>
+    <string name="system_is_default">アプリはデフォルトに設定されています</string>
+
+    <!-- Customization Settings -->
+    <string name="custom_icons">アイコン</string>
+    <string name="custom_show_icons">アプリのアイコンを表示</string>
+    <string name="custom_monochrome">モノクロアイコン</string>
+    <string name="custom_icon_pack">アイコンパック</string>
+    <string name="custom_show_favorites">お気に入りを表示</string>
+    <string name="custom_usage_awareness">利用状況の認識</string>
+    <string name="custom_accent_style">アクセントスタイル</string>
+    <string name="custom_default">デフォルト</string>
+    <string name="usage_permission_title">権限が必要です</string>
+    <string name="usage_permission_msg">アプリの利用状況を表示するには、Home Appが利用統計にアクセスする必要があります。このデータがデバイスの外に出ることはありません。</string>
+    <string name="usage_permission_grant">アクセスを許可</string>
+    <string name="usage_mode_none">なし</string>
+    <string name="usage_mode_time">利用時間</string>
+    <string name="usage_mode_pct">今日の%%</string>
+    <string name="accent_white">マジェスティックホワイト</string>
+    <string name="accent_gold">ロイヤルゴールド</string>
+    <string name="accent_emerald">ディープエメラルド</string>
+    <string name="accent_blue">ミニマルブルー</string>
+    <string name="accent_rose">ソフトローズ</string>
+
+    <!-- Focus Settings -->
+    <string name="focus_add">追加</string>
+    <string name="focus_dnd_sync">おやすみモードと同期</string>
+    <string name="focus_none_defined">集中モードが定義されていません</string>
+    <string name="focus_on">オン</string>
+    <string name="focus_off">オフ</string>
+    <string name="focus_new_title">新しい集中モード</string>
+    <string name="focus_edit_title">モードを編集</string>
+    <string name="focus_name_label">名前</string>
+    <string name="focus_schedule">スケジュール</string>
+    <string name="focus_start">開始</string>
+    <string name="focus_end">終了</string>
+    <string name="focus_clear_schedule">スケジュールをクリア</string>
+    <string name="focus_allowed_apps">許可されたアプリ (%d)</string>
+    <string name="focus_create">作成</string>
+    <string name="focus_select_time">時間を選択</string>
+    <string name="focus_manual">手動</string>
+    <string name="focus_summary_format">%1$d 個のアプリ \u2022 %2$s</string>
+
+    <!-- Security \u0026 Blocking -->
+    <string name="security_biometric_lock">集中モードの生体認証保護</string>
+    <string name="security_biometric_desc">タスクが未完了の場合、集中モードをオフにするには認証が必要です。</string>
+    <string name="security_blocked_apps">ブロックされたアプリ</string>
+    <string name="security_no_blocked">ブロックされたアプリはありません</string>
+    <string name="security_stealth_apps">ステルスアプリ</string>
+    <string name="security_visible">表示</string>
+    <string name="security_forever">無期限</string>
+    <string name="security_expired">期限切れ</string>
+    <string name="security_remaining_format">残り %1$d時間 %2$d分</string>
+    <string name="security_mins_remaining_format">残り %d 分</string>
+    <string name="security_unblock">ブロック解除</string>
+
+    <!-- Backup Settings -->
+    <string name="backup_desc">メモ、集中モード、設定をファイルに保存するか、以前のバックアップから復元します。</string>
+    <string name="backup_button">バックアップ</string>
+    <string name="restore_button">復元</string>
+    <string name="backup_auto_sync">自動同期（毎日）</string>
+    <string name="backup_syncing_to">選択したファイルに同期中</string>
+    <string name="backup_select_file">同期するファイルを選択</string>
+    <string name="backup_change_file">タップしてファイルを変更</string>
+
+    <!-- Home View -->
+    <string name="home_tasks_remaining">残り %d 個のタスク</string>
+    <string name="home_favorites">お気に入り</string>
+    <string name="home_search_placeholder">何でも検索&#8230;</string>
+    <string name="home_notes_section">メモ</string>
+    <string name="home_search_web">\"%s\" をウェブで検索</string>
+    <string name="home_phone">電話</string>
+    <string name="home_camera">カメラ</string>
+    <string name="home_year_overview">%d 年の概要</string>
+    <string name="home_year_lived_prefix">今年はすでに </string>
+    <string name="home_year_lived_suffix"> が経過しました。</string>
+    <string name="home_days_remaining">最高の一年にするために、残り %d 日です。</string>
+
+    <!-- App Drawer & List -->
+    <string name="drawer_search_placeholder">アプリを検索&#8230;</string>
+    <string name="app_menu_remove_favorite">お気に入りから削除</string>
+    <string name="app_menu_add_favorite">お気に入りに追加</string>
+    <string name="app_menu_remove_shield">生体認証シールドを削除</string>
+    <string name="app_menu_add_shield">生体認証シールドを追加</string>
+    <string name="app_menu_remove_stealth">ステルスから削除</string>
+    <string name="app_menu_add_stealth">ステルスに追加</string>
+    <string name="app_menu_block">アプリをブロック</string>
+    <string name="app_menu_info">アプリ情報</string>
+    <string name="app_menu_uninstall">アンインストール</string>
+    <string name="app_block_15m">15分</string>
+    <string name="app_block_1h">1時間</string>
+    <string name="app_block_8h">8時間</string>
+    <string name="app_block_24h">24時間</string>
+    <string name="app_block_custom">カスタム期間&#8230;</string>
+    <string name="app_block_until_unblocked">ブロック解除まで</string>
+    <string name="app_block_duration_title">ブロック期間</string>
+    <string name="app_block_minutes_label">分</string>
+
+    <!-- Usage Stats -->
+    <string name="usage_time_format">今日は %1$d時間 %2$d分</string>
+    <string name="usage_mins_format">今日は %d 分</string>
+    <string name="usage_pct_format">今日の %d%%</string>
+    <string name="usage_pct_low">今日の 1%% 未満</string>
+
+    <!-- Main Activity / System -->
+    <string name="backup_success">バックアップを保存しました</string>
+    <string name="backup_failed">バックアップ失敗: %s</string>
+    <string name="restore_success">復元に成功しました</string>
+    <string name="restore_failed_invalid">復元失敗: 無効なファイル</string>
+    <string name="restore_failed">復元失敗: %s</string>
+    <string name="sync_location_set">自動同期の場所を設定しました</string>
+    <string name="sync_location_failed">同期場所の設定に失敗しました: %s</string>
+    <string name="auth_required">認証が必要です</string>
+    <string name="auth_proceed">続行するには認証してください</string>
+</resources>

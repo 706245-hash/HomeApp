@@ -13,6 +13,7 @@ A focused, text-based Android launcher designed to reduce distractions and help 
 - **Usage Awareness**: See exactly where your time goes with real-time app usage metrics.
 - **Privacy Focused**: No servers, no tracking, and no data collection. 100% local-first.
 - **Customizable**: Multiple accent colors, icon pack support, and monochrome icon options.
+- **Multilingual Support**: Available in English (US/UK), Spanish, French, Japanese, German, Italian, and Chinese (Simplified).
 
 ##  Tech Stack
 

@@ -1,0 +1,155 @@
+<resources>
+    <string name="app_name">Home App</string>
+
+    <!-- General -->
+    <string name="save">保存</string>
+    <string name="undo">撤销</string>
+    <string name="edit">编辑</string>
+    <string name="delete">删除</string>
+    <string name="cancel">取消</string>
+    <string name="ok">确定</string>
+    <string name="close">关闭</string>
+    <string name="settings">设置</string>
+    <string name="settings_expand">展开</string>
+    <string name="settings_collapse">折叠</string>
+    <string name="unlock">解锁</string>
+    <string name="block">屏蔽</string>
+
+    <!-- Notes View -->
+    <string name="notes_title_today">今日笔记</string>
+    <string name="notes_back_to_today">返回今日</string>
+    <string name="notes_history">历史</string>
+    <string name="notes_add_task">添加任务</string>
+    <string name="notes_placeholder">在这里输入你的想法&#8230;</string>
+    <string name="notes_task_placeholder">在这里输入你的任务&#8230;</string>
+    <string name="notes_delete_task">删除任务</string>
+    <string name="notes_edit_history_title">编辑历史？</string>
+    <string name="notes_edit_history_message">修改过去可能会改变你的感悟。是否继续？</string>
+    <string name="notes_delete_task_title">删除任务？</string>
+    <string name="notes_delete_task_message">此操作无法撤销。</string>
+    <string name="notes_weekly_performance">每周表现</string>
+    <string name="notes_avg_completion">平均完成率：</string>
+
+    <!-- Settings Sections -->
+    <string name="settings_section_system">系统</string>
+    <string name="settings_section_customization">个性化</string>
+    <string name="settings_section_focus">专注模式</string>
+    <string name="settings_section_security">安全与屏蔽</string>
+    <string name="settings_section_backup">备份与恢复</string>
+
+    <!-- System Settings -->
+    <string name="system_set_default">设为默认桌面</string>
+    <string name="system_is_default">应用已设为默认</string>
+
+    <!-- Customization Settings -->
+    <string name="custom_icons">图标</string>
+    <string name="custom_show_icons">显示应用图标</string>
+    <string name="custom_monochrome">单色图标</string>
+    <string name="custom_icon_pack">图标包</string>
+    <string name="custom_show_favorites">显示收藏</string>
+    <string name="custom_usage_awareness">使用感知</string>
+    <string name="custom_accent_style">强调色风格</string>
+    <string name="custom_default">默认</string>
+    <string name="usage_permission_title">需要权限</string>
+    <string name="usage_permission_msg">为了显示应用使用情况，Home App 需要访问您的使用统计信息。此类数据绝不会离开您的设备。</string>
+    <string name="usage_permission_grant">授予权限</string>
+    <string name="usage_mode_none">无</string>
+    <string name="usage_mode_time">使用时长</string>
+    <string name="usage_mode_pct">%% 占比</string>
+    <string name="accent_white">高雅白</string>
+    <string name="accent_gold">皇室金</string>
+    <string name="accent_emerald">深翡翠</string>
+    <string name="accent_blue">极简蓝</string>
+    <string name="accent_rose">柔嫩粉</string>
+
+    <!-- Focus Settings -->
+    <string name="focus_add">添加</string>
+    <string name="focus_dnd_sync">与“请勿打扰”同步</string>
+    <string name="focus_none_defined">未定义专注模式</string>
+    <string name="focus_on">开启</string>
+    <string name="focus_off">关闭</string>
+    <string name="focus_new_title">新建专注模式</string>
+    <string name="focus_edit_title">编辑模式</string>
+    <string name="focus_name_label">名称</string>
+    <string name="focus_schedule">时间表</string>
+    <string name="focus_start">开始</string>
+    <string name="focus_end">结束</string>
+    <string name="focus_clear_schedule">清除时间表</string>
+    <string name="focus_allowed_apps">允许的应用 (%d)</string>
+    <string name="focus_create">创建</string>
+    <string name="focus_select_time">选择时间</string>
+    <string name="focus_manual">手动</string>
+    <string name="focus_summary_format">%1$d 个应用 \u2022 %2$s</string>
+
+    <!-- Security \u0026 Blocking -->
+    <string name="security_biometric_lock">生物识别专注保护</string>
+    <string name="security_biometric_desc">如果任务未完成，则需要进行身份验证才能关闭专注模式。</string>
+    <string name="security_blocked_apps">已屏蔽应用</string>
+    <string name="security_no_blocked">无已屏蔽应用</string>
+    <string name="security_stealth_apps">隐身应用</string>
+    <string name="security_visible">可见</string>
+    <string name="security_forever">永久</string>
+    <string name="security_expired">已过期</string>
+    <string name="security_remaining_format">剩余 %1$d 小时 %2$d 分钟</string>
+    <string name="security_mins_remaining_format">剩余 %d 分钟</string>
+    <string name="security_unblock">解除屏蔽</string>
+
+    <!-- Backup Settings -->
+    <string name="backup_desc">将您的笔记、专注模式和设置保存到文件，或从之前的备份中恢复。</string>
+    <string name="backup_button">备份</string>
+    <string name="restore_button">恢复</string>
+    <string name="backup_auto_sync">自动同步（每日）</string>
+    <string name="backup_syncing_to">正在同步到所选文件</string>
+    <string name="backup_select_file">选择要同步的文件</string>
+    <string name="backup_change_file">点击以更改文件</string>
+
+    <!-- Home View -->
+    <string name="home_tasks_remaining">剩余 %d 个任务</string>
+    <string name="home_favorites">收藏</string>
+    <string name="home_search_placeholder">搜索一切&#8230;</string>
+    <string name="home_notes_section">笔记</string>
+    <string name="home_search_web">网页搜索 “%s”</string>
+    <string name="home_phone">电话</string>
+    <string name="home_camera">相机</string>
+    <string name="home_year_overview">%d 年度概览</string>
+    <string name="home_year_lived_prefix">今年已过去 </string>
+    <string name="home_year_lived_suffix">。</string>
+    <string name="home_days_remaining">剩余 %d 天，让每一天都有意义。</string>
+
+    <!-- App Drawer & List -->
+    <string name="drawer_search_placeholder">搜索应用&#8230;</string>
+    <string name="app_menu_remove_favorite">从收藏中移除</string>
+    <string name="app_menu_add_favorite">添加到收藏</string>
+    <string name="app_menu_remove_shield">移除生物识别防护</string>
+    <string name="app_menu_add_shield">添加生物识别防护</string>
+    <string name="app_menu_remove_stealth">从隐身中移除</string>
+    <string name="app_menu_add_stealth">添加到隐身</string>
+    <string name="app_menu_block">屏蔽应用</string>
+    <string name="app_menu_info">应用信息</string>
+    <string name="app_menu_uninstall">卸载</string>
+    <string name="app_block_15m">15 分钟</string>
+    <string name="app_block_1h">1 小时</string>
+    <string name="app_block_8h">8 小时</string>
+    <string name="app_block_24h">24 小时</string>
+    <string name="app_block_custom">自定义时长&#8230;</string>
+    <string name="app_block_until_unblocked">直到解除屏蔽</string>
+    <string name="app_block_duration_title">屏蔽时长</string>
+    <string name="app_block_minutes_label">分钟</string>
+
+    <!-- Usage Stats -->
+    <string name="usage_time_format">今日 %1$d 小时 %2$d 分钟</string>
+    <string name="usage_mins_format">今日 %d 分钟</string>
+    <string name="usage_pct_format">今日占比 %d%%</string>
+    <string name="usage_pct_low">今日占比 &lt; 1%%</string>
+
+    <!-- Main Activity / System -->
+    <string name="backup_success">备份已成功保存</string>
+    <string name="backup_failed">备份失败：%s</string>
+    <string name="restore_success">恢复成功</string>
+    <string name="restore_failed_invalid">恢复失败：文件无效</string>
+    <string name="restore_failed">恢复失败：%s</string>
+    <string name="sync_location_set">自动同步位置已设置</string>
+    <string name="sync_location_failed">设置同步位置失败：%s</string>
+    <string name="auth_required">需要身份验证</string>
+    <string name="auth_proceed">请进行身份验证以继续</string>
+</resources>
