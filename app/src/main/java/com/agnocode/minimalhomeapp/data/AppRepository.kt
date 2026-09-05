@@ -7,6 +7,7 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Process
 import android.util.Log
+import androidx.room.withTransaction
 import androidx.sqlite.db.SimpleSQLiteQuery
 import com.agnocode.minimalhomeapp.PreferenceManager
 import com.agnocode.minimalhomeapp.data.local.AppDatabase
@@ -282,26 +283,23 @@ class AppRepository @Inject constructor(
             if (backup == null || backup.version < 1) return@withContext false
             
             // Start restoration
-            db.runInTransaction {
-                // We use runBlocking here because we are inside a Room transaction callback which is synchronous
-                kotlinx.coroutines.runBlocking {
-                    // Clear current data
-                    noteDao.deleteAllNotes()
-                    noteDao.deleteAllTasks()
-                    focusModeDao.deleteAllFocusModes()
-                    focusModeDao.deleteAllPackages()
-                    
-                    // Insert backup data
-                    backup.notes.forEach { noteDao.insertNote(it) }
-                    backup.tasks.forEach { noteDao.insertTask(it) }
-                    backup.focusModes.forEach { focusModeDao.insertFocusMode(it) }
-                    backup.focusModePackages.forEach { 
-                        focusModeDao.insertPackage(FocusModePackageEntity(it.modeName, it.packageName))
-                    }
-                    
-                    // Restore preferences
-                    prefs.restorePreferencesFromBackup(backup.preferences)
+            db.withTransaction {
+                // Clear current data
+                noteDao.deleteAllNotes()
+                noteDao.deleteAllTasks()
+                focusModeDao.deleteAllFocusModes()
+                focusModeDao.deleteAllPackages()
+                
+                // Insert backup data
+                backup.notes.forEach { noteDao.insertNote(it) }
+                backup.tasks.forEach { noteDao.insertTask(it) }
+                backup.focusModes.forEach { focusModeDao.insertFocusMode(it) }
+                backup.focusModePackages.forEach { 
+                    focusModeDao.insertPackage(FocusModePackageEntity(it.modeName, it.packageName))
                 }
+                
+                // Restore preferences
+                prefs.restorePreferencesFromBackup(backup.preferences)
             }
             true
         } catch (e: Exception) {

@@ -194,7 +194,7 @@ fun HomeScreen(
                     context.contentResolver.openOutputStream(it)?.use { stream ->
                         stream.write(json.toByteArray())
                     }
-                    Toast.makeText(context, context.getString(R.string.backup_success), Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, R.string.backup_success, Toast.LENGTH_SHORT).show()
                 } catch (e: Exception) {
                     Toast.makeText(context, context.getString(R.string.backup_failed, e.message), Toast.LENGTH_SHORT).show()
                 }
@@ -214,10 +214,10 @@ fun HomeScreen(
                     if (json != null) {
                         val success = mainViewModel.importBackup(json)
                         if (success) {
-                            Toast.makeText(context, context.getString(R.string.restore_success), Toast.LENGTH_SHORT).show()
+                            Toast.makeText(context, R.string.restore_success, Toast.LENGTH_SHORT).show()
                             // No need to restart as state flows are reactive
                         } else {
-                            Toast.makeText(context, context.getString(R.string.restore_failed_invalid), Toast.LENGTH_SHORT).show()
+                            Toast.makeText(context, R.string.restore_failed_invalid, Toast.LENGTH_SHORT).show()
                         }
                     }
                 } catch (e: Exception) {
@@ -238,7 +238,7 @@ fun HomeScreen(
                     Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION
                 )
                 mainViewModel.setAutoSyncUri(it.toString())
-                Toast.makeText(context, context.getString(R.string.sync_location_set), Toast.LENGTH_SHORT).show()
+                Toast.makeText(context, R.string.sync_location_set, Toast.LENGTH_SHORT).show()
             } catch (e: Exception) {
                 Toast.makeText(context, context.getString(R.string.sync_location_failed, e.message), Toast.LENGTH_SHORT).show()
             }

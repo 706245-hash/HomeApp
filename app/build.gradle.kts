@@ -14,7 +14,7 @@ android {
     defaultConfig {
         applicationId = "com.agnocode.minimalhomeapp"
         minSdk = 24
-        targetSdk = 37
+        targetSdk = 35
         versionCode = 4
         versionName = "1.0.3"
 
@@ -74,6 +74,8 @@ dependencies {
     testImplementation(libs.junit)
     testImplementation(libs.mockk)
     testImplementation(libs.kotlinx.coroutines.test)
+    androidTestImplementation(libs.hiltTesting)
+    kspAndroidTest(libs.hilt.compiler)
     androidTestImplementation(platform(libs.androidx.compose.bom))
     androidTestImplementation(libs.androidx.compose.ui.test.junit4)
     androidTestImplementation(libs.androidx.espresso.core)

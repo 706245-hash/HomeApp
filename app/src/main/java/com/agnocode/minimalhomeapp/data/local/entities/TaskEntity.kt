@@ -1,10 +1,13 @@
 package com.agnocode.minimalhomeapp.data.local.entities
 
+import androidx.annotation.Keep
 import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.Index
 import androidx.room.PrimaryKey
+import com.google.gson.annotations.SerializedName
 
+@Keep
 @Entity(
     tableName = "tasks",
     foreignKeys = [
@@ -18,9 +21,19 @@ import androidx.room.PrimaryKey
     indices = [Index("noteDate")]
 )
 data class TaskEntity(
-    @PrimaryKey val id: String,
+    @PrimaryKey 
+    @SerializedName("id")
+    val id: String,
+    
+    @SerializedName("noteDate")
     val noteDate: String,
+    
+    @SerializedName("text")
     val text: String,
+    
+    @SerializedName("isChecked")
     val isChecked: Boolean,
+    
+    @SerializedName("order")
     val order: Int = 0 // To maintain UI order
 )
