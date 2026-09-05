@@ -100,7 +100,7 @@ fun AppDrawerView(
                 Icon(
                     imageVector = Icons.Default.Settings,
                     contentDescription = "Settings",
-                    tint = Color.DarkGray
+                    tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.6f)
                 )
             }
         }

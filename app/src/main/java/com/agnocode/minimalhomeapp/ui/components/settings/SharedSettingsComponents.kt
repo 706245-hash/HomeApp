@@ -39,8 +39,8 @@ fun SettingsSectionHeader(
             Spacer(Modifier.width(12.dp))
             Text(
                 text = title,
-                color = Color.White,
-                fontWeight = FontWeight.Light,
+                color = if (isExpanded) MaterialTheme.colorScheme.primary else Color.White,
+                fontWeight = if (isExpanded) FontWeight.Bold else FontWeight.Light,
                 fontSize = 20.sp
             )
         }

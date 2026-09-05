@@ -213,7 +213,7 @@ fun HomeView(
                 if (showFavorites && favorites.isNotEmpty()) {
                     Text(
                         text = "Favorites",
-                        color = Color.DarkGray,
+                        color = MaterialTheme.colorScheme.primary,
                         fontSize = 12.sp,
                         fontWeight = FontWeight.Bold,
                         modifier = Modifier.padding(bottom = 8.dp)
@@ -391,7 +391,7 @@ fun HomeView(
                     Icon(
                         imageVector = Icons.Default.Call,
                         contentDescription = "Phone",
-                        tint = Color.DarkGray
+                        tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f)
                     )
                 }
                 IconButton(onClick = {
@@ -401,7 +401,7 @@ fun HomeView(
                     Icon(
                         imageVector = Icons.Default.PhotoCamera,
                         contentDescription = "Camera",
-                        tint = Color.DarkGray
+                        tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f)
                     )
                 }
             }
@@ -459,11 +459,11 @@ fun YearDashboard(onDismiss: () -> Unit) {
         },
         text = {
             Column {
-                Text(
-                    text = "You have lived $progress% of this year.",
-                    color = Color.LightGray,
-                    fontSize = 16.sp
-                )
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text("You have lived ", color = Color.LightGray, fontSize = 16.sp)
+                    Text("$progress%", color = MaterialTheme.colorScheme.primary, fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                    Text(" of this year.", color = Color.LightGray, fontSize = 16.sp)
+                }
                 Spacer(Modifier.height(8.dp))
                 Text(
                     text = "$daysLeft days remaining to make it count.",
@@ -504,13 +504,13 @@ fun YearProgressBar(modifier: Modifier = Modifier) {
                 modifier = Modifier
                     .weight(1f)
                     .fillMaxHeight()
-                    .background(Color.White)
+                    .background(Color.White.copy(alpha = 0.1f))
             ) {
                 Box(
                     modifier = Modifier
                         .fillMaxWidth(passedProgress)
                         .fillMaxHeight()
-                        .background(Color.Gray)
+                        .background(MaterialTheme.colorScheme.primary)
                 )
             }
         }

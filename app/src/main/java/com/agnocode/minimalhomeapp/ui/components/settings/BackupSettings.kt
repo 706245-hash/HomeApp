@@ -39,7 +39,7 @@ fun BackupSettings(
                     Button(
                         onClick = onBackup,
                         modifier = Modifier.weight(1f),
-                        colors = ButtonDefaults.buttonColors(containerColor = Color.White, contentColor = Color.Black),
+                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary, contentColor = Color.Black),
                         shape = MaterialTheme.shapes.small
                     ) {
                         Text("BACKUP")

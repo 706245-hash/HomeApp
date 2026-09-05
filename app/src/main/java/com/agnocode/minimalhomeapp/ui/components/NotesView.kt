@@ -139,7 +139,7 @@ fun NotesView(
                 }
                 Text(
                     text = if (date == today) "Today's Note" else date,
-                    color = if (isPast && !isEditingPastNote) Color.Gray else Color.White,
+                    color = if (isPast && !isEditingPastNote) Color.Gray else MaterialTheme.colorScheme.primary,
                     fontSize = 20.sp,
                     fontWeight = FontWeight.Bold
                 )
@@ -196,13 +196,13 @@ fun NotesView(
                 linkedDates.forEach { linkedDate ->
                     Surface(
                         modifier = Modifier.clickable { onDateSelect(linkedDate) },
-                        color = Color.White.copy(alpha = 0.1f),
+                        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
                         shape = RoundedCornerShape(4.dp),
-                        border = BorderStroke(0.5.dp, Color.Gray)
+                        border = BorderStroke(0.5.dp, MaterialTheme.colorScheme.primary)
                     ) {
                         Text(
                             text = linkedDate,
-                            color = Color.White,
+                            color = MaterialTheme.colorScheme.primary,
                             fontSize = 10.sp,
                             modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
                         )
@@ -483,12 +483,20 @@ fun WeeklyDashboard(
         text = {
             Column(modifier = Modifier.fillMaxWidth()) {
                 val avgProgress = (weeklyProductivity.average() * 100).toInt()
-                Text(
-                    "Average Completion: $avgProgress%",
-                    color = Color.White,
-                    fontSize = 32.sp,
-                    fontWeight = FontWeight.Light
-                )
+                Row(verticalAlignment = Alignment.Bottom) {
+                    Text(
+                        "Average Completion: ",
+                        color = Color.White,
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Light
+                    )
+                    Text(
+                        "$avgProgress%",
+                        color = MaterialTheme.colorScheme.primary,
+                        fontSize = 32.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
                 
                 Spacer(Modifier.height(24.dp))
                 

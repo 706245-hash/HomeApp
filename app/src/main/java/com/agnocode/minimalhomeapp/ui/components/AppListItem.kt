@@ -117,14 +117,14 @@ fun AppListItem(
                     modifier = Modifier
                         .size(24.dp)
                         .clip(CircleShape)
-                        .then(if (isProtected) Modifier.background(Color.White.copy(alpha = 0.1f), CircleShape) else Modifier)
+                        .then(if (isProtected) Modifier.background(MaterialTheme.colorScheme.primary.copy(alpha = 0.2f), CircleShape) else Modifier)
                 )
                 Spacer(Modifier.width(12.dp))
             }
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = app.label,
-                    color = if (isProtected) Color.LightGray else Color.White,
+                    color = if (isProtected) MaterialTheme.colorScheme.primary else Color.White,
                     fontSize = 18.sp,
                     fontWeight = FontWeight.Normal
                 )
@@ -369,7 +369,7 @@ fun CustomBlockDialog(
                             if (mins > 0) onConfirm(mins)
                         },
                         colors = ButtonDefaults.buttonColors(
-                            containerColor = Color.White,
+                            containerColor = MaterialTheme.colorScheme.primary,
                             contentColor = Color.Black
                         ),
                         shape = RoundedCornerShape(4.dp),

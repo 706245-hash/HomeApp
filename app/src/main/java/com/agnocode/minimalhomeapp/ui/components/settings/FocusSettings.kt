@@ -69,7 +69,7 @@ fun FocusSettings(
                     },
                     colors = SwitchDefaults.colors(
                         checkedThumbColor = Color.Black,
-                        checkedTrackColor = Color.White,
+                        checkedTrackColor = MaterialTheme.colorScheme.primary,
                         uncheckedThumbColor = Color.Gray,
                         uncheckedTrackColor = Color.DarkGray
                     )
