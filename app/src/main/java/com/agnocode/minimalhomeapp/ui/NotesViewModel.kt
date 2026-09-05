@@ -14,28 +14,38 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
-import java.text.SimpleDateFormat
+import java.time.*
+import java.time.format.DateTimeFormatter
 import java.util.*
 import javax.inject.Inject
 
 @HiltViewModel
 class NotesViewModel @Inject constructor(
-    private val repository: AppRepository
+    private val repository: AppRepository,
+    private val clock: Clock
 ) : ViewModel() {
 
-    private val dateFmt = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+    private val dateFmt = DateTimeFormatter.ofPattern("yyyy-MM-dd")
 
     // allDailyNotes stores the last known state from the database
     val allDailyNotes = mutableStateMapOf<String, DailyNote>()
     
     // UI state
-    var selectedNoteDate = mutableStateOf(dateFmt.format(Date()))
+    var selectedNoteDate = mutableStateOf(LocalDate.now(clock).format(dateFmt))
     var currentNoteText = mutableStateOf("")
     val currentTasks = mutableStateListOf<NoteTask>()
     var isEditingPastNote = mutableStateOf(false)
     
+    val currentBacklinks = derivedStateOf {
+        val target = "[[${selectedNoteDate.value}]]"
+        allDailyNotes.values
+            .filter { it.date != selectedNoteDate.value && it.content.contains(target) }
+            .map { it.date }
+            .sortedDescending()
+    }
+    
     val hasIncompleteTasks = derivedStateOf {
-        val today = dateFmt.format(Date())
+        val today = LocalDate.now(clock).format(dateFmt)
         if (selectedNoteDate.value != today) false // Focus commitment usually applies to today
         else currentTasks.any { !it.isChecked }
     }
@@ -47,10 +57,10 @@ class NotesViewModel @Inject constructor(
 
     // Statistics for the last 7 days
     val weeklyProductivity = derivedStateOf {
-        val cal = Calendar.getInstance()
+        val today = LocalDate.now(clock)
         (0..6).map { i ->
-            val d = Calendar.getInstance().apply { add(Calendar.DAY_OF_YEAR, -i) }
-            val dateStr = dateFmt.format(d.time)
+            val date = today.minusDays(i.toLong())
+            val dateStr = date.format(dateFmt)
             val note = allDailyNotes[dateStr]
             if (note == null || note.tasks.isEmpty()) 0f
             else {
@@ -68,15 +78,10 @@ class NotesViewModel @Inject constructor(
     private fun startMidnightTimer() {
         viewModelScope.launch {
             while (true) {
-                val now = Calendar.getInstance()
-                val midnight = Calendar.getInstance().apply {
-                    add(Calendar.DAY_OF_YEAR, 1)
-                    set(Calendar.HOUR_OF_DAY, 0)
-                    set(Calendar.MINUTE, 0)
-                    set(Calendar.SECOND, 0)
-                    set(Calendar.MILLISECOND, 0)
-                }
-                val delayTime = midnight.timeInMillis - now.timeInMillis
+                val now = LocalDateTime.now(clock)
+                val midnight = now.toLocalDate().plusDays(1).atStartOfDay()
+                val delayTime = Duration.between(now, midnight).toMillis()
+                
                 if (delayTime > 0) {
                     delay(delayTime)
                 }
@@ -109,7 +114,7 @@ class NotesViewModel @Inject constructor(
     }
 
     fun resetToToday() {
-        val today = dateFmt.format(Date())
+        val today = LocalDate.now(clock).format(dateFmt)
         if (selectedNoteDate.value != today) {
             selectNoteDate(today)
         }
@@ -207,7 +212,7 @@ class NotesViewModel @Inject constructor(
     }
 
     fun getAvailableDates(): List<String> {
-        val today = dateFmt.format(Date())
+        val today = LocalDate.now(clock).format(dateFmt)
         return (allDailyNotes.keys + today)
             .filter { it.matches(Regex("\\d{4}-\\d{2}-\\d{2}")) }
             .distinct()

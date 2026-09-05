@@ -22,8 +22,12 @@ class DailyBackupWorker @AssistedInject constructor(
         val enabled = repository.autoSyncEnabledFlow.first()
         val uriString = repository.autoSyncUriFlow.first()
         
-        if (!enabled || uriString == null) return Result.success()
+        if (!enabled || uriString == null) {
+            Log.d("DailyBackupWorker", "Auto-sync skipped: enabled=$enabled, uri=$uriString")
+            return Result.success()
+        }
         
+        Log.d("DailyBackupWorker", "Starting auto-sync backup to $uriString")
         return try {
             val uri = Uri.parse(uriString)
             val json = repository.generateBackupJson()
@@ -36,7 +40,8 @@ class DailyBackupWorker @AssistedInject constructor(
             Result.success()
         } catch (e: Exception) {
             Log.e("DailyBackupWorker", "Auto-sync failed", e)
-            Result.retry()
+            // If it's a security exception, retrying might not help without user action
+            if (e is SecurityException) Result.failure() else Result.retry()
         }
     }
 }

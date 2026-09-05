@@ -22,6 +22,8 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.res.stringResource
+import com.agnocode.minimalhomeapp.R
 import com.agnocode.minimalhomeapp.data.model.AppItem
 import com.agnocode.minimalhomeapp.util.SmartAction
 
@@ -86,7 +88,7 @@ fun AppDrawerView(
                     Box {
                         if (searchQuery.isEmpty()) {
                             Text(
-                                "Search apps...",
+                                stringResource(R.string.drawer_search_placeholder),
                                 color = Color.DarkGray,
                                 fontSize = 20.sp
                             )
@@ -99,7 +101,7 @@ fun AppDrawerView(
             IconButton(onClick = onOpenSettings) {
                 Icon(
                     imageVector = Icons.Default.Settings,
-                    contentDescription = "Settings",
+                    contentDescription = stringResource(R.string.settings),
                     tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.6f)
                 )
             }
@@ -129,10 +131,11 @@ fun AppDrawerView(
                     items = apps,
                     key = { it.packageName }
                 ) { app ->
+                    val context = androidx.compose.ui.platform.LocalContext.current
                     val usageMillis = usageStats[app.packageName] ?: 0L
                     val usageSubtitle = when (usageMode) {
-                        "time" -> if (usageMillis > 0) formatUsageTime(usageMillis) else null
-                        "percentage" -> if (usageMillis > 0) formatUsagePercentage(usageMillis) else null
+                        "time" -> if (usageMillis > 0) formatUsageTime(context, usageMillis) else null
+                        "percentage" -> if (usageMillis > 0) formatUsagePercentage(context, usageMillis) else null
                         else -> null
                     }
                     
@@ -160,14 +163,14 @@ fun AppDrawerView(
     }
 }
 
-private fun formatUsageTime(millis: Long): String {
+private fun formatUsageTime(context: android.content.Context, millis: Long): String {
     val mins = (millis / 60000)
     val hrs = mins / 60
-    return if (hrs > 0) "${hrs}h ${mins % 60}m today" else "${mins}m today"
+    return if (hrs > 0) context.getString(R.string.usage_time_format, hrs, mins % 60) else context.getString(R.string.usage_mins_format, mins)
 }
 
-private fun formatUsagePercentage(millis: Long): String {
+private fun formatUsagePercentage(context: android.content.Context, millis: Long): String {
     val awakeMillis = 16 * 60 * 60 * 1000L // Assume 16 hours awake
     val pct = (millis.toFloat() / awakeMillis * 100).toInt()
-    return if (pct > 0) "$pct% of your day" else "< 1% of your day"
+    return if (pct > 0) context.getString(R.string.usage_pct_format, pct) else context.getString(R.string.usage_pct_low)
 }

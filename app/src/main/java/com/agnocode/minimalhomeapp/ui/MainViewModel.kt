@@ -86,7 +86,12 @@ class MainViewModel @Inject constructor(
             }
         }
         viewModelScope.launch {
-            autoSyncUriFlow.collect { autoSyncUri.value = it }
+            autoSyncUriFlow.collect { 
+                autoSyncUri.value = it
+                if (it != null && autoSyncEnabled.value) {
+                    scheduleAutoSync()
+                }
+            }
         }
         viewModelScope.launch {
             accentColorFlow.collect { accentColor.value = it }
@@ -127,20 +132,36 @@ class MainViewModel @Inject constructor(
     }
 
     private fun scheduleAutoSync() {
-        val workRequest = PeriodicWorkRequestBuilder<DailyBackupWorker>(1, TimeUnit.DAYS)
-            .setConstraints(Constraints.Builder().setRequiresBatteryNotLow(true).build())
+        val constraints = Constraints.Builder()
+            .setRequiresBatteryNotLow(true)
+            .build()
+
+        val periodicRequest = PeriodicWorkRequestBuilder<DailyBackupWorker>(1, TimeUnit.DAYS)
+            .setConstraints(constraints)
             .setBackoffCriteria(BackoffPolicy.EXPONENTIAL, WorkRequest.MIN_BACKOFF_MILLIS, TimeUnit.MILLISECONDS)
             .build()
             
         WorkManager.getInstance(context).enqueueUniquePeriodicWork(
-            "daily_backup",
-            ExistingPeriodicWorkPolicy.KEEP,
-            workRequest
+            "daily_backup_periodic",
+            ExistingPeriodicWorkPolicy.UPDATE,
+            periodicRequest
+        )
+
+        // Trigger an immediate backup as well when scheduled (e.g. on toggle or app start)
+        val immediateRequest = OneTimeWorkRequestBuilder<DailyBackupWorker>()
+            .setConstraints(constraints)
+            .build()
+        
+        WorkManager.getInstance(context).enqueueUniqueWork(
+            "daily_backup_immediate",
+            ExistingWorkPolicy.KEEP,
+            immediateRequest
         )
     }
 
     private fun cancelAutoSync() {
-        WorkManager.getInstance(context).cancelUniqueWork("daily_backup")
+        WorkManager.getInstance(context).cancelUniqueWork("daily_backup_periodic")
+        WorkManager.getInstance(context).cancelUniqueWork("daily_backup_immediate")
     }
 
     fun triggerResetToHome() {

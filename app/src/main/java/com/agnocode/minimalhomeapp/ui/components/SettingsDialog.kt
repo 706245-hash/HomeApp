@@ -19,6 +19,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
+import androidx.compose.ui.res.stringResource
+import com.agnocode.minimalhomeapp.R
 import com.agnocode.minimalhomeapp.data.model.AppItem
 import com.agnocode.minimalhomeapp.data.model.FocusMode
 import com.agnocode.minimalhomeapp.ui.components.settings.*
@@ -52,6 +54,7 @@ fun SettingsDialog(
     onSetMonochromeIcons: (Boolean) -> Unit,
     accentColor: String,
     onSetAccentColor: (String) -> Unit,
+    hasUsageStatsPermission: () -> Boolean,
     ghostApps: List<AppItem>,
     onRemoveGhost: (String) -> Unit,
     onBackup: () -> Unit,
@@ -106,13 +109,13 @@ fun SettingsDialog(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    "Settings",
+                    stringResource(R.string.settings),
                     color = Color.White,
                     fontSize = 32.sp,
                     fontWeight = FontWeight.Light
                 )
                 IconButton(onClick = onDismiss) {
-                    Icon(Icons.Default.Close, contentDescription = "Close", tint = Color.White, modifier = Modifier.size(32.dp))
+                    Icon(Icons.Default.Close, contentDescription = stringResource(R.string.close), tint = Color.White, modifier = Modifier.size(32.dp))
                 }
             }
 
@@ -148,6 +151,7 @@ fun SettingsDialog(
                         onSetMonochromeIcons = onSetMonochromeIcons,
                         accentColor = accentColor,
                         onSetAccentColor = onSetAccentColor,
+                        hasUsageStatsPermission = hasUsageStatsPermission,
                         availableIconPacks = availableIconPacks,
                         selectedIconPack = selectedIconPack,
                         onSetIconPack = onSetIconPack

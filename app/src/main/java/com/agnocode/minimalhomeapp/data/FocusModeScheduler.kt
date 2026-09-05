@@ -10,21 +10,21 @@ import com.agnocode.minimalhomeapp.data.model.FocusMode
 import com.agnocode.minimalhomeapp.data.receiver.FocusModeReceiver
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.first
-import java.util.*
+import java.time.*
 import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
 class FocusModeScheduler @Inject constructor(
     @ApplicationContext private val context: Context,
-    private val focusModeDao: FocusModeDao
+    private val focusModeDao: FocusModeDao,
+    private val clock: Clock
 ) {
     private val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
 
     suspend fun scheduleNext() {
         val modes = focusModeDao.getAllFocusModes().first()
         val scheduledModes = modes.map { entity ->
-            // Note: We'd ideally have the packages here too, but for scheduling we just need times
             FocusMode(entity.name, emptySet(), entity.startTime, entity.endTime)
         }.filter { it.startTime != null && it.endTime != null }
 
@@ -33,10 +33,8 @@ class FocusModeScheduler @Inject constructor(
             return
         }
 
-        val now = Calendar.getInstance()
-        val currentMinutes = now.get(Calendar.HOUR_OF_DAY) * 60 + now.get(Calendar.MINUTE)
-
-        var nextTriggerTime: Calendar? = null
+        val now = LocalDateTime.now(clock)
+        var nextTriggerTime: LocalDateTime? = null
         var nextModeName: String? = null
         var isStarting = true
 
@@ -44,31 +42,29 @@ class FocusModeScheduler @Inject constructor(
             val start = mode.startTime!!
             val end = mode.endTime!!
 
-            // Calculate when this mode starts today
-            val startCal = getCalendarForMinutes(start)
-            if (startCal.before(now)) startCal.add(Calendar.DAY_OF_YEAR, 1)
+            var startDt = now.withHour(start / 60).withMinute(start % 60).withSecond(0).withNano(0)
+            if (startDt.isBefore(now)) startDt = startDt.plusDays(1)
 
-            // Calculate when this mode ends today
-            val endCal = getCalendarForMinutes(end)
-            if (endCal.before(now)) endCal.add(Calendar.DAY_OF_YEAR, 1)
+            var endDt = now.withHour(end / 60).withMinute(end % 60).withSecond(0).withNano(0)
+            if (endDt.isBefore(now)) endDt = endDt.plusDays(1)
 
             // Check start
-            if (nextTriggerTime == null || startCal.before(nextTriggerTime)) {
-                nextTriggerTime = startCal
+            if (nextTriggerTime == null || startDt.isBefore(nextTriggerTime)) {
+                nextTriggerTime = startDt
                 nextModeName = mode.name
                 isStarting = true
             }
 
             // Check end
-            if (nextTriggerTime == null || endCal.before(nextTriggerTime)) {
-                nextTriggerTime = endCal
+            if (nextTriggerTime == null || endDt.isBefore(nextTriggerTime)) {
+                nextTriggerTime = endDt
                 nextModeName = mode.name
                 isStarting = false
             }
         }
 
         nextTriggerTime?.let { triggerTime ->
-            Log.d("FocusModeScheduler", "Scheduling next alarm for $nextModeName at ${triggerTime.time}, starting: $isStarting")
+            Log.d("FocusModeScheduler", "Scheduling next alarm for $nextModeName at $triggerTime, starting: $isStarting")
             
             val intent = Intent(context, FocusModeReceiver::class.java).apply {
                 action = FocusModeReceiver.ACTION_FOCUS_MODE_TRIGGER
@@ -83,9 +79,11 @@ class FocusModeScheduler @Inject constructor(
                 PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
             )
 
+            val triggerMillis = triggerTime.atZone(clock.zone).toInstant().toEpochMilli()
+
             alarmManager.setAndAllowWhileIdle(
                 AlarmManager.RTC_WAKEUP,
-                triggerTime.timeInMillis,
+                triggerMillis,
                 pendingIntent
             )
         }
@@ -104,15 +102,6 @@ class FocusModeScheduler @Inject constructor(
         pendingIntent?.let {
             alarmManager.cancel(it)
             it.cancel()
-        }
-    }
-
-    private fun getCalendarForMinutes(minutes: Int): Calendar {
-        return Calendar.getInstance().apply {
-            set(Calendar.HOUR_OF_DAY, minutes / 60)
-            set(Calendar.MINUTE, minutes % 60)
-            set(Calendar.SECOND, 0)
-            set(Calendar.MILLISECOND, 0)
         }
     }
 }

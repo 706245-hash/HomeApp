@@ -84,7 +84,7 @@ class AppDrawerViewModel @Inject constructor(
     )
 
     @OptIn(ExperimentalCoroutinesApi::class)
-    private val activeAllowedPackagesFlow: StateFlow<Set<String>?> = repository.activeFocusModeFlow
+    val activeAllowedPackagesFlow: StateFlow<Set<String>?> = repository.activeFocusModeFlow
         .flatMapLatest { name ->
             if (name == null) flowOf(null)
             else repository.focusModesFlow.map { modes ->
@@ -177,6 +177,10 @@ class AppDrawerViewModel @Inject constructor(
         viewModelScope.launch {
             repository.setUsageAwarenessMode(mode)
         }
+    }
+
+    fun hasUsageStatsPermission(): Boolean {
+        return repository.hasUsageStatsPermission()
     }
 
     fun refreshApps() {

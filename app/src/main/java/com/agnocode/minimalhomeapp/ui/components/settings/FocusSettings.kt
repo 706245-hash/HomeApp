@@ -22,6 +22,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import androidx.compose.ui.res.stringResource
+import com.agnocode.minimalhomeapp.R
 import com.agnocode.minimalhomeapp.data.model.AppItem
 import com.agnocode.minimalhomeapp.data.model.FocusMode
 
@@ -45,18 +47,18 @@ fun FocusSettings(
 
     Column {
         SettingsSectionHeader(
-            title = "Focus Modes",
+            title = stringResource(R.string.settings_section_focus),
             isExpanded = isExpanded,
             onToggle = onToggle,
             trailing = {
                 IconButton(onClick = { showAddFocusMode = true }) {
-                    Icon(Icons.Default.Add, contentDescription = "Add", tint = Color.White)
+                    Icon(Icons.Default.Add, contentDescription = stringResource(R.string.focus_add), tint = Color.White)
                 }
             }
         )
 
         if (isExpanded) {
-            SettingsRow(label = "Sync with Do Not Disturb") {
+            SettingsRow(label = stringResource(R.string.focus_dnd_sync)) {
                 Switch(
                     checked = dndSyncEnabled,
                     onCheckedChange = { enabled ->
@@ -67,17 +69,12 @@ fun FocusSettings(
                             onSetDndSyncEnabled(enabled)
                         }
                     },
-                    colors = SwitchDefaults.colors(
-                        checkedThumbColor = Color.Black,
-                        checkedTrackColor = MaterialTheme.colorScheme.primary,
-                        uncheckedThumbColor = Color.Gray,
-                        uncheckedTrackColor = Color.DarkGray
-                    )
+                    colors = switchColors()
                 )
             }
 
             if (focusModes.isEmpty()) {
-                Text("No focus modes defined", color = Color.Gray, fontSize = 14.sp, modifier = Modifier.padding(start = 32.dp, bottom = 16.dp))
+                Text(stringResource(R.string.focus_none_defined), color = Color.Gray, fontSize = 14.sp, modifier = Modifier.padding(start = 32.dp, bottom = 16.dp))
             } else {
                 focusModes.forEach { mode ->
                     FocusModeItem(
@@ -139,22 +136,22 @@ private fun FocusModeItem(
                 )
                 val scheduleText = if (mode.startTime != null && mode.endTime != null) {
                     "${formatMinutes(mode.startTime)} - ${formatMinutes(mode.endTime)}"
-                } else "Manual"
+                } else stringResource(R.string.focus_manual)
                 Text(
-                    "${mode.allowedPackages.size} apps • $scheduleText",
+                    text = stringResource(R.string.focus_summary_format, mode.allowedPackages.size, scheduleText),
                     color = Color.Gray,
                     fontSize = 12.sp
                 )
             }
             Row {
                 TextButton(onClick = onToggle) {
-                    Text(if (isActive) "OFF" else "ON", color = if (isActive) Color.White else Color.Gray, fontWeight = FontWeight.Bold)
+                    Text(if (isActive) stringResource(R.string.focus_off) else stringResource(R.string.focus_on), color = if (isActive) Color.White else Color.Gray, fontWeight = FontWeight.Bold)
                 }
                 TextButton(onClick = onEdit) {
-                    Text("EDIT", color = Color.White)
+                    Text(stringResource(R.string.edit), color = Color.White)
                 }
                 TextButton(onClick = onDelete) {
-                    Text("DELETE", color = Color.White.copy(alpha = 0.6f))
+                    Text(stringResource(R.string.delete), color = Color.White.copy(alpha = 0.6f))
                 }
             }
         }
@@ -200,19 +197,19 @@ private fun FocusModePage(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        if (existingMode == null) "New Focus Mode" else "Edit Mode",
+                        if (existingMode == null) stringResource(R.string.focus_new_title) else stringResource(R.string.focus_edit_title),
                         color = Color.White,
                         fontSize = 24.sp
                     )
                     IconButton(onClick = onDismiss) {
-                        Icon(Icons.Default.Close, contentDescription = "Cancel", tint = Color.White)
+                        Icon(Icons.Default.Close, contentDescription = stringResource(R.string.cancel), tint = Color.White)
                     }
                 }
 
                 OutlinedTextField(
                     value = name,
                     onValueChange = { name = it },
-                    label = { Text("Name", color = Color.Gray) },
+                    label = { Text(stringResource(R.string.focus_name_label), color = Color.Gray) },
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth(),
                     colors = OutlinedTextFieldDefaults.colors(
@@ -225,18 +222,18 @@ private fun FocusModePage(
 
                 Spacer(Modifier.height(24.dp))
 
-                Text("Schedule", color = Color.White, fontWeight = FontWeight.Bold)
+                Text(stringResource(R.string.focus_schedule), color = Color.White, fontWeight = FontWeight.Bold)
                 Spacer(Modifier.height(8.dp))
 
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
                     TimeSelectButton(
-                        label = "Start",
+                        label = stringResource(R.string.focus_start),
                         time = startTime,
                         onClick = { showStartTimePicker = true },
                         modifier = Modifier.weight(1f)
                     )
                     TimeSelectButton(
-                        label = "End",
+                        label = stringResource(R.string.focus_end),
                         time = endTime,
                         onClick = { showEndTimePicker = true },
                         modifier = Modifier.weight(1f)
@@ -245,13 +242,13 @@ private fun FocusModePage(
                 
                 if (startTime != null || endTime != null) {
                     TextButton(onClick = { startTime = null; endTime = null }) {
-                        Text("Clear Schedule", color = Color.Gray, fontSize = 12.sp)
+                        Text(stringResource(R.string.focus_clear_schedule), color = Color.Gray, fontSize = 12.sp)
                     }
                 }
 
                 Spacer(Modifier.height(24.dp))
 
-                Text("Allowed Apps (${selectedPackages.size})", color = Color.White, fontWeight = FontWeight.Bold)
+                Text(stringResource(R.string.focus_allowed_apps, selectedPackages.size), color = Color.White, fontWeight = FontWeight.Bold)
                 LazyColumn(modifier = Modifier.weight(1f).padding(top = 8.dp)) {
                     items(allApps) { app ->
                         val isSelected = selectedPackages.contains(app.packageName)
@@ -289,7 +286,7 @@ private fun FocusModePage(
                     colors = ButtonDefaults.buttonColors(containerColor = Color.White, contentColor = Color.Black),
                     shape = MaterialTheme.shapes.small
                 ) {
-                    Text(if (existingMode == null) "CREATE" else "SAVE", fontWeight = FontWeight.Bold)
+                    Text(if (existingMode == null) stringResource(R.string.focus_create) else stringResource(R.string.save), fontWeight = FontWeight.Bold)
                 }
             }
         }
@@ -357,16 +354,16 @@ private fun TimePickerDialogWrapper(
         onDismissRequest = onDismiss,
         confirmButton = {
             TextButton(onClick = { onConfirm(state.hour * 60 + state.minute) }) {
-                Text("OK", color = Color.White)
+                Text(stringResource(R.string.ok), color = Color.White)
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("Cancel", color = Color.Gray)
+                Text(stringResource(R.string.cancel), color = Color.Gray)
             }
         },
         containerColor = Color.Black,
-        title = { Text("Select Time", color = Color.White) },
+        title = { Text(stringResource(R.string.focus_select_time), color = Color.White) },
         text = {
             TimePicker(
                 state = state,

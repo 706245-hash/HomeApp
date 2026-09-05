@@ -38,10 +38,14 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.input.nestedscroll.NestedScrollSource
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.res.stringResource
+import com.agnocode.minimalhomeapp.R
 import com.agnocode.minimalhomeapp.data.model.AppItem
 import com.agnocode.minimalhomeapp.util.SmartAction
 import kotlinx.coroutines.delay
-import java.text.SimpleDateFormat
+import java.time.LocalDate
+import java.time.LocalTime
+import java.time.format.DateTimeFormatter
 import java.util.*
 import kotlin.time.Duration.Companion.milliseconds
 import androidx.activity.compose.BackHandler
@@ -52,8 +56,8 @@ import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.text.input.ImeAction
 
-private val timeFmt = SimpleDateFormat("HH:mm:ss", Locale.getDefault())
-private val dateFmt = SimpleDateFormat("EEEE, d MMMM", Locale.getDefault())
+private val timeFmt = DateTimeFormatter.ofPattern("HH:mm:ss")
+private val dateFmt = DateTimeFormatter.ofPattern("EEEE, d MMMM")
 
 @Composable
 fun HomeView(
@@ -200,7 +204,7 @@ fun HomeView(
                 if (tasksCount > 0) {
                     Spacer(Modifier.height(16.dp))
                     Text(
-                        text = "$tasksCount task(s) remaining",
+                        text = stringResource(R.string.home_tasks_remaining, tasksCount),
                         color = Color.LightGray,
                         fontSize = 14.sp,
                         fontWeight = FontWeight.Medium,
@@ -212,7 +216,7 @@ fun HomeView(
 
                 if (showFavorites && favorites.isNotEmpty()) {
                     Text(
-                        text = "Favorites",
+                        text = stringResource(R.string.home_favorites),
                         color = MaterialTheme.colorScheme.primary,
                         fontSize = 12.sp,
                         fontWeight = FontWeight.Bold,
@@ -222,8 +226,8 @@ fun HomeView(
                     favorites.forEach { app ->
                         val usageMillis = usageStats[app.packageName] ?: 0L
                         val usageSubtitle = when (usageMode) {
-                            "time" -> if (usageMillis > 0) formatUsageTime(usageMillis) else null
-                            "percentage" -> if (usageMillis > 0) formatUsagePercentage(usageMillis) else null
+                            "time" -> if (usageMillis > 0) formatUsageTime(context, usageMillis) else null
+                            "percentage" -> if (usageMillis > 0) formatUsagePercentage(context, usageMillis) else null
                             else -> null
                         }
                         
@@ -265,7 +269,7 @@ fun HomeView(
                         Box {
                             if (searchQuery.isEmpty()) {
                                 Text(
-                                    "Search anything...",
+                                    stringResource(R.string.home_search_placeholder),
                                     color = Color.DarkGray,
                                     fontSize = 24.sp
                                 )
@@ -293,8 +297,8 @@ fun HomeView(
                     items(searchResults) { app ->
                         val usageMillis = usageStats[app.packageName] ?: 0L
                         val usageSubtitle = when (usageMode) {
-                            "time" -> if (usageMillis > 0) formatUsageTime(usageMillis) else null
-                            "percentage" -> if (usageMillis > 0) formatUsagePercentage(usageMillis) else null
+                            "time" -> if (usageMillis > 0) formatUsageTime(context, usageMillis) else null
+                            "percentage" -> if (usageMillis > 0) formatUsagePercentage(context, usageMillis) else null
                             else -> null
                         }
                         
@@ -317,7 +321,7 @@ fun HomeView(
                     if (noteResults.isNotEmpty()) {
                         item {
                             Text(
-                                "Notes",
+                                stringResource(R.string.home_notes_section),
                                 color = Color.DarkGray,
                                 fontSize = 12.sp,
                                 fontWeight = FontWeight.Bold,
@@ -352,7 +356,7 @@ fun HomeView(
                     if (searchQuery.isNotEmpty()) {
                         item {
                             Text(
-                                text = "Search web for \"$searchQuery\"",
+                                text = stringResource(R.string.home_search_web, searchQuery),
                                 color = Color.LightGray,
                                 fontSize = 16.sp,
                                 modifier = Modifier
@@ -390,7 +394,7 @@ fun HomeView(
                 }) {
                     Icon(
                         imageVector = Icons.Default.Call,
-                        contentDescription = "Phone",
+                        contentDescription = stringResource(R.string.home_phone),
                         tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f)
                     )
                 }
@@ -400,7 +404,7 @@ fun HomeView(
                 }) {
                     Icon(
                         imageVector = Icons.Default.PhotoCamera,
-                        contentDescription = "Camera",
+                        contentDescription = stringResource(R.string.home_camera),
                         tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f)
                     )
                 }
@@ -440,9 +444,9 @@ fun HomeView(
 
 @Composable
 fun YearDashboard(onDismiss: () -> Unit) {
-    val calendar = Calendar.getInstance()
-    val dayOfYear = calendar.get(Calendar.DAY_OF_YEAR)
-    val totalDays = calendar.getActualMaximum(Calendar.DAY_OF_YEAR)
+    val now = LocalDate.now()
+    val dayOfYear = now.dayOfYear
+    val totalDays = now.lengthOfYear()
     val daysLeft = totalDays - dayOfYear
     val progress = (dayOfYear.toFloat() / totalDays * 100).toInt()
 
@@ -451,7 +455,7 @@ fun YearDashboard(onDismiss: () -> Unit) {
         containerColor = Color.Black,
         title = {
             Text(
-                text = "${calendar.get(Calendar.YEAR)} Overview",
+                text = stringResource(R.string.home_year_overview, now.year),
                 color = Color.White,
                 fontSize = 20.sp,
                 fontWeight = FontWeight.Bold
@@ -460,13 +464,13 @@ fun YearDashboard(onDismiss: () -> Unit) {
         text = {
             Column {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text("You have lived ", color = Color.LightGray, fontSize = 16.sp)
+                    Text(stringResource(R.string.home_year_lived_prefix), color = Color.LightGray, fontSize = 16.sp)
                     Text("$progress%", color = MaterialTheme.colorScheme.primary, fontSize = 18.sp, fontWeight = FontWeight.Bold)
-                    Text(" of this year.", color = Color.LightGray, fontSize = 16.sp)
+                    Text(stringResource(R.string.home_year_lived_suffix), color = Color.LightGray, fontSize = 16.sp)
                 }
                 Spacer(Modifier.height(8.dp))
                 Text(
-                    text = "$daysLeft days remaining to make it count.",
+                    text = stringResource(R.string.home_days_remaining, daysLeft),
                     color = Color.White,
                     fontSize = 18.sp,
                     fontWeight = FontWeight.Medium
@@ -475,7 +479,7 @@ fun YearDashboard(onDismiss: () -> Unit) {
         },
         confirmButton = {
             TextButton(onClick = onDismiss) {
-                Text("Close", color = Color.Gray)
+                Text(stringResource(R.string.close), color = Color.Gray)
             }
         }
     )
@@ -483,10 +487,10 @@ fun YearDashboard(onDismiss: () -> Unit) {
 
 @Composable
 fun YearProgressBar(modifier: Modifier = Modifier) {
-    val calendar = Calendar.getInstance()
-    val currentMonth = calendar.get(Calendar.MONTH)
-    val currentDay = calendar.get(Calendar.DAY_OF_MONTH)
-    val daysInMonth = calendar.getActualMaximum(Calendar.DAY_OF_MONTH)
+    val now = LocalDate.now()
+    val currentMonth = now.monthValue - 1 // 0-indexed for repeat
+    val currentDay = now.dayOfMonth
+    val daysInMonth = now.lengthOfMonth()
 
     Row(
         modifier = modifier
@@ -504,13 +508,13 @@ fun YearProgressBar(modifier: Modifier = Modifier) {
                 modifier = Modifier
                     .weight(1f)
                     .fillMaxHeight()
-                    .background(Color.White.copy(alpha = 0.1f))
+                    .background(MaterialTheme.colorScheme.primary)
             ) {
                 Box(
                     modifier = Modifier
                         .fillMaxWidth(passedProgress)
                         .fillMaxHeight()
-                        .background(MaterialTheme.colorScheme.primary)
+                        .background(Color.DarkGray)
                 )
             }
         }
@@ -518,18 +522,19 @@ fun YearProgressBar(modifier: Modifier = Modifier) {
 }
 
 fun currentTime(): Pair<String, String> {
-    val now = Date()
-    return timeFmt.format(now) to dateFmt.format(now)
+    val nowTime = LocalTime.now()
+    val nowDate = LocalDate.now()
+    return nowTime.format(timeFmt) to nowDate.format(dateFmt)
 }
 
-private fun formatUsageTime(millis: Long): String {
+private fun formatUsageTime(context: Context, millis: Long): String {
     val mins = (millis / 60000)
     val hrs = mins / 60
-    return if (hrs > 0) "${hrs}h ${mins % 60}m today" else "${mins}m today"
+    return if (hrs > 0) context.getString(R.string.usage_time_format, hrs, mins % 60) else context.getString(R.string.usage_mins_format, mins)
 }
 
-private fun formatUsagePercentage(millis: Long): String {
+private fun formatUsagePercentage(context: Context, millis: Long): String {
     val awakeMillis = 16 * 60 * 60 * 1000L // Assume 16 hours awake
     val pct = (millis.toFloat() / awakeMillis * 100).toInt()
-    return if (pct > 0) "$pct% of your day" else "< 1% of your day"
+    return if (pct > 0) context.getString(R.string.usage_pct_format, pct) else context.getString(R.string.usage_pct_low)
 }

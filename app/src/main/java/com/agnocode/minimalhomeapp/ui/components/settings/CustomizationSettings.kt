@@ -17,6 +17,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.res.stringResource
+import com.agnocode.minimalhomeapp.R
 import com.agnocode.minimalhomeapp.data.model.AppItem
 
 @Composable
@@ -34,13 +36,14 @@ fun CustomizationSettings(
     onSetMonochromeIcons: (Boolean) -> Unit,
     accentColor: String,
     onSetAccentColor: (String) -> Unit,
+    hasUsageStatsPermission: () -> Boolean,
     availableIconPacks: List<AppItem>,
     selectedIconPack: String?,
     onSetIconPack: (String?) -> Unit
 ) {
     Column {
         SettingsSectionHeader(
-            title = "Customization",
+            title = stringResource(R.string.settings_section_customization),
             isExpanded = isExpanded,
             onToggle = onToggle
         )
@@ -57,17 +60,17 @@ fun CustomizationSettings(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text("Icons", color = Color.White, fontSize = 16.sp)
+                    Text(stringResource(R.string.custom_icons), color = Color.White, fontSize = 16.sp)
                     Icon(
                         imageVector = if (iconsExpanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
-                        contentDescription = null,
+                        contentDescription = if (iconsExpanded) stringResource(R.string.settings_collapse) else stringResource(R.string.settings_expand),
                         tint = Color.Gray,
                         modifier = Modifier.size(20.dp)
                     )
                 }
 
                 if (iconsExpanded) {
-                    SettingsRow(label = "Show App Icons") {
+                    SettingsRow(label = stringResource(R.string.custom_show_icons)) {
                         Switch(
                             checked = showIcons,
                             onCheckedChange = { 
@@ -79,7 +82,7 @@ fun CustomizationSettings(
                     }
 
                     if (showIcons) {
-                        SettingsRow(label = "Monochrome Icons") {
+                        SettingsRow(label = stringResource(R.string.custom_monochrome)) {
                             Switch(
                                 checked = monochromeIcons,
                                 onCheckedChange = onSetMonochromeIcons,
@@ -87,7 +90,7 @@ fun CustomizationSettings(
                             )
                         }
 
-                        SettingsRow(label = "Icon Pack") {
+                        SettingsRow(label = stringResource(R.string.custom_icon_pack)) {
                             IconPackDropdown(
                                 availableIconPacks = availableIconPacks,
                                 selectedIconPack = selectedIconPack,
@@ -98,7 +101,7 @@ fun CustomizationSettings(
                 }
             }
 
-            SettingsRow(label = "Show Favorites") {
+            SettingsRow(label = stringResource(R.string.custom_show_favorites)) {
                 Switch(
                     checked = showFavorites,
                     onCheckedChange = onSetShowFavorites,
@@ -106,15 +109,16 @@ fun CustomizationSettings(
                 )
             }
 
-            SettingsRow(label = "Usage Awareness") {
+            SettingsRow(label = stringResource(R.string.custom_usage_awareness)) {
                 UsageAwarenessDropdown(
                     context = context,
                     mode = usageAwarenessMode,
-                    onSetMode = onSetUsageAwarenessMode
+                    onSetMode = onSetUsageAwarenessMode,
+                    hasPermission = hasUsageStatsPermission
                 )
             }
 
-            SettingsRow(label = "Accent Style") {
+            SettingsRow(label = stringResource(R.string.custom_accent_style)) {
                 AccentStyleDropdown(
                     current = accentColor,
                     onSetColor = onSetAccentColor
@@ -132,7 +136,7 @@ private fun IconPackDropdown(
 ) {
     var expanded by remember { mutableStateOf(false) }
     Box {
-        val label = availableIconPacks.find { it.packageName == selectedIconPack }?.label ?: "Default"
+        val label = availableIconPacks.find { it.packageName == selectedIconPack }?.label ?: stringResource(R.string.custom_default)
         Text(
             label,
             color = Color.LightGray,
@@ -146,7 +150,7 @@ private fun IconPackDropdown(
                 .border(1.dp, Color.White, MaterialTheme.shapes.extraSmall)
         ) {
             DropdownMenuItem(
-                text = { Text("Default", color = Color.White) },
+                text = { Text(stringResource(R.string.custom_default), color = Color.White) },
                 onClick = {
                     onSetIconPack(null)
                     expanded = false
@@ -169,14 +173,42 @@ private fun IconPackDropdown(
 private fun UsageAwarenessDropdown(
     context: Context,
     mode: String,
-    onSetMode: (String) -> Unit
+    onSetMode: (String) -> Unit,
+    hasPermission: () -> Boolean
 ) {
     var expanded by remember { mutableStateOf(false) }
+    var showPermissionDialog by remember { mutableStateOf(false) }
+    var pendingMode by remember { mutableStateOf<String?>(null) }
+
+    if (showPermissionDialog) {
+        AlertDialog(
+            onDismissRequest = { showPermissionDialog = false },
+            title = { Text(stringResource(R.string.usage_permission_title), color = Color.White) },
+            text = { Text(stringResource(R.string.usage_permission_msg), color = Color.Gray) },
+            confirmButton = {
+                TextButton(onClick = {
+                    val intent = Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS)
+                    context.startActivity(intent)
+                    showPermissionDialog = false
+                    pendingMode?.let { onSetMode(it) }
+                }) {
+                    Text(stringResource(R.string.usage_permission_grant), color = Color.White)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showPermissionDialog = false }) {
+                    Text(stringResource(R.string.cancel), color = Color.Gray)
+                }
+            },
+            containerColor = Color.Black
+        )
+    }
+
     Box {
         val currentLabel = when (mode) {
-            "time" -> "Time spent"
-            "percentage" -> "% of day"
-            else -> "None"
+            "time" -> stringResource(R.string.usage_mode_time)
+            "percentage" -> stringResource(R.string.usage_mode_pct)
+            else -> stringResource(R.string.usage_mode_none)
         }
         Text(
             currentLabel,
@@ -191,19 +223,20 @@ private fun UsageAwarenessDropdown(
                 .border(1.dp, Color.White, MaterialTheme.shapes.extraSmall)
         ) {
             val options = listOf(
-                "none" to "None",
-                "time" to "Time spent",
-                "percentage" to "% of day"
+                "none" to R.string.usage_mode_none,
+                "time" to R.string.usage_mode_time,
+                "percentage" to R.string.usage_mode_pct
             )
-            options.forEach { (id, label) ->
+            options.forEach { (id, resId) ->
                 DropdownMenuItem(
-                    text = { Text(label, color = Color.White) },
+                    text = { Text(stringResource(resId), color = Color.White) },
                     onClick = {
-                        if (id != "none") {
-                            val intent = Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS)
-                            context.startActivity(intent)
+                        if (id != "none" && !hasPermission()) {
+                            pendingMode = id
+                            showPermissionDialog = true
+                        } else {
+                            onSetMode(id)
                         }
-                        onSetMode(id)
                         expanded = false
                     }
                 )
@@ -219,7 +252,13 @@ private fun AccentStyleDropdown(
 ) {
     var expanded by remember { mutableStateOf(false) }
     Box {
-        val currentLabel = current.replaceFirstChar { it.uppercase() }
+        val currentLabel = when (current) {
+            "gold" -> stringResource(R.string.accent_gold)
+            "emerald" -> stringResource(R.string.accent_emerald)
+            "blue" -> stringResource(R.string.accent_blue)
+            "rose" -> stringResource(R.string.accent_rose)
+            else -> stringResource(R.string.accent_white)
+        }
         Text(
             currentLabel,
             color = Color.LightGray,
@@ -233,15 +272,15 @@ private fun AccentStyleDropdown(
                 .border(1.dp, Color.White, MaterialTheme.shapes.extraSmall)
         ) {
             val options = listOf(
-                "white" to "Majestic White",
-                "gold" to "Royal Gold",
-                "emerald" to "Deep Emerald",
-                "blue" to "Minimal Blue",
-                "rose" to "Soft Rose"
+                "white" to R.string.accent_white,
+                "gold" to R.string.accent_gold,
+                "emerald" to R.string.accent_emerald,
+                "blue" to R.string.accent_blue,
+                "rose" to R.string.accent_rose
             )
-            options.forEach { (id, label) ->
+            options.forEach { (id, resId) ->
                 DropdownMenuItem(
-                    text = { Text(label, color = Color.White) },
+                    text = { Text(stringResource(resId), color = Color.White) },
                     onClick = {
                         onSetColor(id)
                         expanded = false

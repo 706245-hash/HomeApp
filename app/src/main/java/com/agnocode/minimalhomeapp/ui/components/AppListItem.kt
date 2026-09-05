@@ -35,6 +35,8 @@ import androidx.compose.ui.window.DialogProperties
 import androidx.core.graphics.drawable.toBitmap
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
+import androidx.compose.ui.res.stringResource
+import com.agnocode.minimalhomeapp.R
 import com.agnocode.minimalhomeapp.data.model.AppItem
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -149,7 +151,7 @@ fun AppListItem(
             DropdownMenuItem(
                 text = {
                     Text(
-                        if (isFavorite) "Remove from Favorites" else "Add to Favorites",
+                        if (isFavorite) stringResource(R.string.app_menu_remove_favorite) else stringResource(R.string.app_menu_add_favorite),
                         color = Color.White
                     )
                 },
@@ -161,7 +163,7 @@ fun AppListItem(
             DropdownMenuItem(
                 text = {
                     Text(
-                        if (isProtected) "Remove Biometric Shield" else "Add Biometric Shield",
+                        if (isProtected) stringResource(R.string.app_menu_remove_shield) else stringResource(R.string.app_menu_add_shield),
                         color = Color.White
                     )
                 },
@@ -173,7 +175,7 @@ fun AppListItem(
             DropdownMenuItem(
                 text = {
                     Text(
-                        if (isGhost) "Remove from Stealth" else "Add to Stealth",
+                        if (isGhost) stringResource(R.string.app_menu_remove_stealth) else stringResource(R.string.app_menu_add_stealth),
                         color = Color.White
                     )
                 },
@@ -183,14 +185,14 @@ fun AppListItem(
                 }
             )
             DropdownMenuItem(
-                text = { Text("Block App", color = Color.White) },
+                text = { Text(stringResource(R.string.app_menu_block), color = Color.White) },
                 onClick = {
                     showBlockMenu = true
                     showMenu = false
                 }
             )
             DropdownMenuItem(
-                text = { Text("App Info", color = Color.White) },
+                text = { Text(stringResource(R.string.app_menu_info), color = Color.White) },
                 onClick = {
                     val intent = Intent(
                         Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
@@ -201,7 +203,7 @@ fun AppListItem(
                 }
             )
             DropdownMenuItem(
-                text = { Text("Uninstall", color = Color.White) },
+                text = { Text(stringResource(R.string.app_menu_uninstall), color = Color.White) },
                 onClick = {
                     val intent = Intent(Intent.ACTION_DELETE, Uri.fromParts("package", app.packageName, null))
                     context.startActivity(intent)
@@ -219,13 +221,13 @@ fun AppListItem(
         ) {
             val now = System.currentTimeMillis()
             listOf(
-                "15 minutes" to 15 * 60 * 1000L,
-                "1 hour" to 60 * 60 * 1000L,
-                "8 hours" to 8 * 60 * 60 * 1000L,
-                "24 hours" to 24 * 60 * 60 * 1000L
-            ).forEach { (label, duration) ->
+                R.string.app_block_15m to 15 * 60 * 1000L,
+                R.string.app_block_1h to 60 * 60 * 1000L,
+                R.string.app_block_8h to 8 * 60 * 60 * 1000L,
+                R.string.app_block_24h to 24 * 60 * 60 * 1000L
+            ).forEach { (resId, duration) ->
                 DropdownMenuItem(
-                    text = { Text(label, color = Color.White) },
+                    text = { Text(stringResource(resId), color = Color.White) },
                     onClick = {
                         onBlock(now + duration)
                         showBlockMenu = false
@@ -233,14 +235,14 @@ fun AppListItem(
                 )
             }
             DropdownMenuItem(
-                text = { Text("Custom duration...", color = Color.White) },
+                text = { Text(stringResource(R.string.app_block_custom), color = Color.White) },
                 onClick = {
                     showCustomBlockDialog = true
                     showBlockMenu = false
                 }
             )
             DropdownMenuItem(
-                text = { Text("Until unblocked", color = Color.White) },
+                text = { Text(stringResource(R.string.app_block_until_unblocked), color = Color.White) },
                 onClick = {
                     onBlock(null)
                     showBlockMenu = false
@@ -287,7 +289,7 @@ fun CustomBlockDialog(
                 modifier = Modifier.padding(24.dp)
             ) {
                 Text(
-                    "Block Duration",
+                    stringResource(R.string.app_block_duration_title),
                     color = Color.White,
                     fontSize = 20.sp,
                     fontWeight = FontWeight.Bold
@@ -296,7 +298,7 @@ fun CustomBlockDialog(
                 Spacer(Modifier.height(16.dp))
                 
                 Text(
-                    "Minutes",
+                    stringResource(R.string.app_block_minutes_label),
                     color = Color.Gray,
                     fontSize = 12.sp
                 )
@@ -360,7 +362,7 @@ fun CustomBlockDialog(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     TextButton(onClick = onDismiss) {
-                        Text("CANCEL", color = Color.Gray)
+                        Text(stringResource(R.string.cancel), color = Color.Gray)
                     }
                     Spacer(Modifier.width(16.dp))
                     Button(
@@ -375,7 +377,7 @@ fun CustomBlockDialog(
                         shape = RoundedCornerShape(4.dp),
                         contentPadding = PaddingValues(horizontal = 24.dp)
                     ) {
-                        Text("BLOCK", fontWeight = FontWeight.Bold)
+                        Text(stringResource(R.string.block), fontWeight = FontWeight.Bold)
                     }
                 }
             }

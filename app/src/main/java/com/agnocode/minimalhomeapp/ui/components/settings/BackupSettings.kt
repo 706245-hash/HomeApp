@@ -9,6 +9,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
+import androidx.compose.ui.res.stringResource
+import com.agnocode.minimalhomeapp.R
+
 @Composable
 fun BackupSettings(
     isExpanded: Boolean,
@@ -22,7 +25,7 @@ fun BackupSettings(
 ) {
     Column {
         SettingsSectionHeader(
-            title = "Backup & Restore",
+            title = stringResource(R.string.settings_section_backup),
             isExpanded = isExpanded,
             onToggle = onToggle
         )
@@ -30,7 +33,7 @@ fun BackupSettings(
         if (isExpanded) {
             Column(modifier = Modifier.padding(start = 32.dp, bottom = 16.dp, end = 24.dp)) {
                 Text(
-                    "Save your notes, focus modes, and settings to a file or restore from a previous backup.",
+                    stringResource(R.string.backup_desc),
                     color = Color.Gray,
                     fontSize = 12.sp
                 )
@@ -42,7 +45,7 @@ fun BackupSettings(
                         colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary, contentColor = Color.Black),
                         shape = MaterialTheme.shapes.small
                     ) {
-                        Text("BACKUP")
+                        Text(stringResource(R.string.backup_button))
                     }
                     Button(
                         onClick = onRestore,
@@ -51,13 +54,13 @@ fun BackupSettings(
                         shape = MaterialTheme.shapes.small,
                         border = BorderStroke(1.dp, Color.Gray)
                     ) {
-                        Text("RESTORE")
+                        Text(stringResource(R.string.restore_button))
                     }
                 }
                 
                 Spacer(Modifier.height(16.dp))
                 
-                SettingsRow(label = "Auto-Sync (Daily)") {
+                SettingsRow(label = stringResource(R.string.backup_auto_sync)) {
                     Switch(
                         checked = autoSyncEnabled,
                         onCheckedChange = onSetAutoSyncEnabled,
@@ -73,13 +76,13 @@ fun BackupSettings(
                     ) {
                         Column(modifier = Modifier.fillMaxWidth()) {
                             Text(
-                                text = if (autoSyncUri != null) "Syncing to selected file" else "Select file to sync",
+                                text = if (autoSyncUri != null) stringResource(R.string.backup_syncing_to) else stringResource(R.string.backup_select_file),
                                 color = if (autoSyncUri != null) Color.White else Color.Gray,
                                 fontSize = 14.sp
                             )
                             if (autoSyncUri != null) {
                                 Text(
-                                    text = "Tap to change file",
+                                    text = stringResource(R.string.backup_change_file),
                                     color = Color.Gray,
                                     fontSize = 10.sp
                                 )

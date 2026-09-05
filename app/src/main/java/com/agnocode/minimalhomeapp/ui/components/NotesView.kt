@@ -34,6 +34,8 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.History
+import androidx.compose.material.icons.filled.Link
+import androidx.compose.material.icons.filled.NorthEast
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CheckboxDefaults
@@ -66,18 +68,36 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
+import android.content.Intent
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.gestures.waitForUpOrCancellation
+import androidx.compose.ui.input.pointer.PointerEventPass
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.OffsetMapping
+import androidx.compose.ui.text.input.TransformedText
+import androidx.compose.ui.text.input.VisualTransformation
+import androidx.compose.ui.text.style.TextDecoration
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.net.toUri
+import androidx.compose.ui.res.stringResource
+import com.agnocode.minimalhomeapp.R
 import com.agnocode.minimalhomeapp.data.model.DailyNote
 import com.agnocode.minimalhomeapp.data.model.NoteTask
-import java.text.SimpleDateFormat
-import java.util.Calendar
-import java.util.Date
+import java.time.*
+import java.time.format.DateTimeFormatter
 import java.util.Locale
-import java.util.TimeZone
 import java.util.UUID
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -88,6 +108,7 @@ fun NotesView(
     tasks: List<NoteTask>,
     weeklyProductivity: List<Float>,
     allDailyNotes: Map<String, DailyNote>,
+    backlinks: List<String>,
     isEditingPastNote: Boolean,
     onDateSelect: (String) -> Unit,
     onNoteTextChange: (String) -> Unit,
@@ -99,13 +120,8 @@ fun NotesView(
     onSavePastNote: () -> Unit,
     onUndoPastNote: () -> Unit
 ) {
-    val dateFmt = remember { SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()) }
-    val utcDateFmt = remember { 
-        SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).apply { 
-            timeZone = TimeZone.getTimeZone("UTC") 
-        } 
-    }
-    val today = remember { dateFmt.format(Date()) }
+    val dateFmt = remember { DateTimeFormatter.ofPattern("yyyy-MM-dd") }
+    val today = remember { LocalDate.now().format(dateFmt) }
     val isPast = date < today
     val canEdit = !isPast || isEditingPastNote
     var showUnlockConfirm by remember { mutableStateOf(false) }
@@ -134,11 +150,11 @@ fun NotesView(
                         onClick = { onDateSelect(today) },
                         modifier = Modifier.padding(end = 4.dp)
                     ) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back to Today", tint = Color.Gray)
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.notes_back_to_today), tint = Color.Gray)
                     }
                 }
                 Text(
-                    text = if (date == today) "Today's Note" else date,
+                    text = if (date == today) stringResource(R.string.notes_title_today) else date,
                     color = if (isPast && !isEditingPastNote) Color.Gray else MaterialTheme.colorScheme.primary,
                     fontSize = 20.sp,
                     fontWeight = FontWeight.Bold
@@ -149,15 +165,15 @@ fun NotesView(
                 if (isPast) {
                     if (isEditingPastNote) {
                         TextButton(onClick = onSavePastNote) {
-                            Text("SAVE", color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                            Text(stringResource(R.string.save), color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.Bold)
                         }
                         TextButton(onClick = onUndoPastNote) {
-                            Text("UNDO", color = Color.Gray, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                            Text(stringResource(R.string.undo), color = Color.Gray, fontSize = 12.sp, fontWeight = FontWeight.Bold)
                         }
                     } else {
                         TextButton(onClick = { showUnlockConfirm = true }) {
                             Text(
-                                text = "EDIT",
+                                text = stringResource(R.string.edit),
                                 color = Color.Gray,
                                 fontSize = 12.sp,
                                 fontWeight = FontWeight.Bold
@@ -167,12 +183,12 @@ fun NotesView(
                 }
 
                 IconButton(onClick = { showDatePicker = true }) {
-                    Icon(Icons.Default.History, contentDescription = "History", tint = Color.Gray)
+                    Icon(Icons.Default.History, contentDescription = stringResource(R.string.notes_history), tint = Color.Gray)
                 }
                 
                 if (canEdit) {
                     IconButton(onClick = onAddTask) {
-                        Icon(Icons.Default.Add, contentDescription = "Add Task", tint = Color.White)
+                        Icon(Icons.Default.Add, contentDescription = stringResource(R.string.notes_add_task), tint = Color.White)
                     }
                 }
             }
@@ -183,26 +199,23 @@ fun NotesView(
             onLongClick = { showWeeklyDashboard = true }
         )
         
-        val linkedDates = remember(noteText) {
-            val regex = Regex("\\[\\[(\\d{4}-\\d{2}-\\d{2})]]")
-            regex.findAll(noteText).map { it.groupValues[1] }.distinct().toList()
-        }
-        
-        if (linkedDates.isNotEmpty()) {
+        if (backlinks.isNotEmpty()) {
             Row(
                 modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                linkedDates.forEach { linkedDate ->
+                Icon(Icons.Default.Link, contentDescription = null, tint = Color.Gray, modifier = Modifier.size(12.dp))
+                backlinks.forEach { link ->
                     Surface(
-                        modifier = Modifier.clickable { onDateSelect(linkedDate) },
-                        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
+                        modifier = Modifier.clickable { onDateSelect(link) },
+                        color = Color.DarkGray.copy(alpha = 0.3f),
                         shape = RoundedCornerShape(4.dp),
-                        border = BorderStroke(0.5.dp, MaterialTheme.colorScheme.primary)
+                        border = BorderStroke(0.5.dp, Color.DarkGray)
                     ) {
                         Text(
-                            text = linkedDate,
-                            color = MaterialTheme.colorScheme.primary,
+                            text = link,
+                            color = Color.Gray,
                             fontSize = 10.sp,
                             modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
                         )
@@ -217,20 +230,55 @@ fun NotesView(
         Spacer(Modifier.height(16.dp))
 
         // Main Note Area
+        val accentColor = MaterialTheme.colorScheme.primary
+        var textLayoutResult by remember { mutableStateOf<TextLayoutResult?>(null) }
+        val context = LocalContext.current
+
         BasicTextField(
             value = noteText,
             onValueChange = onNoteTextChange,
             readOnly = !canEdit,
-            modifier = Modifier.weight(1f).fillMaxWidth(),
+            onTextLayout = { textLayoutResult = it },
+            modifier = Modifier
+                .weight(1f)
+                .fillMaxWidth()
+                .pointerInput(noteText) {
+                    awaitEachGesture {
+                        val down = awaitFirstDown(pass = PointerEventPass.Initial)
+                        val layoutResult = textLayoutResult ?: return@awaitEachGesture
+                        val offset = down.position
+                        val position = layoutResult.getOffsetForPosition(offset)
+                        val transformedText = layoutResult.layoutInput.text
+                        
+                        val wikiAnnotation = transformedText.getStringAnnotations("WIKI", position, position).firstOrNull()
+                        val urlAnnotation = transformedText.getStringAnnotations("URL", position, position).firstOrNull()
+                        
+                        if (wikiAnnotation != null || urlAnnotation != null) {
+                            val up = waitForUpOrCancellation(pass = PointerEventPass.Initial)
+                            if (up != null) {
+                                up.consume()
+                                if (wikiAnnotation != null) {
+                                    onDateSelect(wikiAnnotation.item)
+                                } else if (urlAnnotation != null) {
+                                    try {
+                                        val intent = Intent(Intent.ACTION_VIEW, urlAnnotation.item.toUri())
+                                        context.startActivity(intent)
+                                    } catch (_: Exception) {}
+                                }
+                            }
+                        }
+                    }
+                },
             textStyle = LocalTextStyle.current.copy(
                 color = if (canEdit) Color.White else Color.Gray,
                 fontSize = 18.sp
             ),
             cursorBrush = SolidColor(Color.White),
+            visualTransformation = WikiLinkVisualTransformation(accentColor),
             decorationBox = { innerTextField ->
                 Box {
                     if (noteText.isEmpty()) {
-                        Text("Type your thoughts here...", color = Color.DarkGray, fontSize = 18.sp)
+                        Text(stringResource(R.string.notes_placeholder), color = Color.DarkGray, fontSize = 18.sp)
                     }
                     innerTextField()
                 }
@@ -277,7 +325,7 @@ fun NotesView(
                             decorationBox = { innerTextField ->
                                 Box {
                                     if (task.text.isEmpty()) {
-                                        Text("Type your task here...", color = Color.DarkGray, fontSize = 16.sp)
+                                        Text(stringResource(R.string.notes_task_placeholder), color = Color.DarkGray, fontSize = 16.sp)
                                     }
                                     innerTextField()
                                 }
@@ -287,7 +335,7 @@ fun NotesView(
                             IconButton(onClick = { taskToDelete = task.id }) {
                                 Icon(
                                     imageVector = Icons.Default.Delete,
-                                    contentDescription = "Delete Task",
+                                    contentDescription = stringResource(R.string.notes_delete_task),
                                     tint = Color.DarkGray,
                                     modifier = Modifier.size(20.dp)
                                 )
@@ -302,19 +350,19 @@ fun NotesView(
     if (showUnlockConfirm) {
         AlertDialog(
             onDismissRequest = { showUnlockConfirm = false },
-            title = { Text("Edit History?", color = Color.White) },
-            text = { Text("Modifying the past can change your insights. Proceed?", color = Color.Gray) },
+            title = { Text(stringResource(R.string.notes_edit_history_title), color = Color.White) },
+            text = { Text(stringResource(R.string.notes_edit_history_message), color = Color.Gray) },
             confirmButton = {
                 TextButton(onClick = {
                     onToggleEditPastNote()
                     showUnlockConfirm = false
                 }) {
-                    Text("UNLOCK", color = Color.White)
+                    Text(stringResource(R.string.unlock), color = Color.White)
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showUnlockConfirm = false }) {
-                    Text("CANCEL", color = Color.Gray)
+                    Text(stringResource(R.string.cancel), color = Color.Gray)
                 }
             },
             containerColor = Color.Black
@@ -324,19 +372,19 @@ fun NotesView(
     if (taskToDelete != null) {
         AlertDialog(
             onDismissRequest = { taskToDelete = null },
-            title = { Text("Delete Task?", color = Color.White) },
-            text = { Text("This action cannot be undone.", color = Color.Gray) },
+            title = { Text(stringResource(R.string.notes_delete_task_title), color = Color.White) },
+            text = { Text(stringResource(R.string.notes_delete_task_message), color = Color.Gray) },
             confirmButton = {
                 TextButton(onClick = {
                     taskToDelete?.let { onDeleteTask(it) }
                     taskToDelete = null
                 }) {
-                    Text("DELETE", color = Color.White)
+                    Text(stringResource(R.string.delete), color = Color.White)
                 }
             },
             dismissButton = {
                 TextButton(onClick = { taskToDelete = null }) {
-                    Text("CANCEL", color = Color.Gray)
+                    Text(stringResource(R.string.cancel), color = Color.Gray)
                 }
             },
             containerColor = Color.Black
@@ -344,24 +392,20 @@ fun NotesView(
     }
 
     if (showDatePicker) {
+        val initialDate = remember(date) {
+            LocalDate.parse(date, dateFmt)
+        }
         val datePickerState = rememberDatePickerState(
-            initialSelectedDateMillis = dateFmt.parse(date)?.let {
-                val cal = Calendar.getInstance(TimeZone.getTimeZone("UTC"))
-                val localCal = Calendar.getInstance().apply { time = it }
-                cal.set(
-                    localCal.get(Calendar.YEAR),
-                    localCal.get(Calendar.MONTH),
-                    localCal.get(Calendar.DAY_OF_MONTH),
-                    0, 0, 0
-                )
-                cal.set(Calendar.MILLISECOND, 0)
-                cal.timeInMillis
-            },
+            initialSelectedDateMillis = initialDate
+                .atStartOfDay(ZoneOffset.UTC)
+                .toInstant()
+                .toEpochMilli(),
             selectableDates = object : SelectableDates {
                 override fun isSelectableDate(utcTimeMillis: Long): Boolean {
-                    val cal = Calendar.getInstance(TimeZone.getTimeZone("UTC"))
-                    cal.timeInMillis = utcTimeMillis
-                    val d = utcDateFmt.format(cal.time)
+                    val d = Instant.ofEpochMilli(utcTimeMillis)
+                        .atZone(ZoneOffset.UTC)
+                        .toLocalDate()
+                        .format(dateFmt)
                     return d == today || allDailyNotes.containsKey(d)
                 }
             }
@@ -372,18 +416,20 @@ fun NotesView(
             confirmButton = {
                 TextButton(onClick = {
                     datePickerState.selectedDateMillis?.let {
-                        val cal = Calendar.getInstance(TimeZone.getTimeZone("UTC"))
-                        cal.timeInMillis = it
-                        onDateSelect(utcDateFmt.format(cal.time))
+                        val d = Instant.ofEpochMilli(it)
+                            .atZone(ZoneOffset.UTC)
+                            .toLocalDate()
+                            .format(dateFmt)
+                        onDateSelect(d)
                     }
                     showDatePicker = false
                 }) {
-                    Text("OK", color = Color.White)
+                    Text(stringResource(R.string.ok), color = Color.White)
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showDatePicker = false }) {
-                    Text("CANCEL", color = Color.Gray)
+                    Text(stringResource(R.string.cancel), color = Color.Gray)
                 }
             },
             colors = DatePickerDefaults.colors(containerColor = Color.Black)
@@ -456,14 +502,15 @@ fun WeeklyDashboard(
     allDailyNotes: Map<String, DailyNote>,
     onDismiss: () -> Unit
 ) {
-    val dateFmt = remember { SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()) }
-    val dayFmt = remember { SimpleDateFormat("EEE", Locale.getDefault()) }
+    val dateFmt = remember { DateTimeFormatter.ofPattern("yyyy-MM-dd") }
+    val dayFmt = remember { DateTimeFormatter.ofPattern("EEE") }
     
     val weekData = remember {
+        val today = LocalDate.now()
         (0..6).map { i ->
-            val cal = Calendar.getInstance().apply { add(Calendar.DAY_OF_YEAR, -i) }
-            val dateStr = dateFmt.format(cal.time)
-            val dayLabel = dayFmt.format(cal.time)
+            val date = today.minusDays(i.toLong())
+            val dateStr = date.format(dateFmt)
+            val dayLabel = date.format(dayFmt)
             val note = allDailyNotes[dateStr]
             Triple(dayLabel, note?.tasks?.count { it.isChecked } ?: 0, note?.tasks?.size ?: 0)
         }.reversed()
@@ -474,7 +521,7 @@ fun WeeklyDashboard(
         containerColor = Color.Black,
         title = {
             Text(
-                text = "Weekly Performance",
+                text = stringResource(R.string.notes_weekly_performance),
                 color = Color.White,
                 fontSize = 20.sp,
                 fontWeight = FontWeight.Bold
@@ -485,7 +532,7 @@ fun WeeklyDashboard(
                 val avgProgress = (weeklyProductivity.average() * 100).toInt()
                 Row(verticalAlignment = Alignment.Bottom) {
                     Text(
-                        "Average Completion: ",
+                        stringResource(R.string.notes_avg_completion),
                         color = Color.White,
                         fontSize = 18.sp,
                         fontWeight = FontWeight.Light
@@ -527,7 +574,7 @@ fun WeeklyDashboard(
         },
         confirmButton = {
             TextButton(onClick = onDismiss) {
-                Text("CLOSE", color = Color.White)
+                Text(stringResource(R.string.close), color = Color.White)
             }
         },
         properties = androidx.compose.ui.window.DialogProperties(usePlatformDefaultWidth = false),
@@ -537,11 +584,9 @@ fun WeeklyDashboard(
 
 @Composable
 fun DayProgressBar() {
-    val calendar = Calendar.getInstance()
-    val hour = calendar.get(Calendar.HOUR_OF_DAY)
-    val minute = calendar.get(Calendar.MINUTE)
+    val now = LocalTime.now()
     val totalMinutesInDay = 24 * 60
-    val elapsedMinutes = hour * 60 + minute
+    val elapsedMinutes = now.hour * 60 + now.minute
     val progress = elapsedMinutes.toFloat() / totalMinutesInDay
 
     Box(
@@ -554,7 +599,58 @@ fun DayProgressBar() {
             modifier = Modifier
                 .fillMaxWidth(progress) // Passed time
                 .fillMaxHeight()
-                .background(Color.White.copy(alpha = 0.2f))
+                .background(Color.DarkGray)
         )
     }
 }
+
+class WikiLinkVisualTransformation(private val color: Color) : VisualTransformation {
+    private var lastText: String? = null
+    private var lastResult: TransformedText? = null
+
+    override fun filter(text: AnnotatedString): TransformedText {
+        if (text.text == lastText && lastResult != null) {
+            return lastResult!!
+        }
+
+        val annotatedString = buildAnnotatedString {
+            val rawText = text.text
+            val wikiRegex = Regex("\\[\\[(\\d{4}-\\d{2}-\\d{2})]]")
+            val urlRegex = Regex("https?://[^\\s)\\]]+")
+            
+            val matches = (wikiRegex.findAll(rawText) + urlRegex.findAll(rawText))
+                .sortedBy { it.range.first }
+            
+            var lastIndex = 0
+            matches.forEach { match ->
+                if (match.range.first < lastIndex) return@forEach
+                
+                append(rawText.substring(lastIndex, match.range.first))
+                
+                val isWiki = match.value.startsWith("[[")
+                
+                withStyle(SpanStyle(
+                    color = color,
+                    fontWeight = FontWeight.Bold,
+                    textDecoration = TextDecoration.Underline
+                )) {
+                    if (isWiki) {
+                        pushStringAnnotation(tag = "WIKI", annotation = match.groupValues[1])
+                    } else {
+                        pushStringAnnotation(tag = "URL", annotation = match.value)
+                    }
+                    append(match.value)
+                    pop()
+                }
+                lastIndex = match.range.last + 1
+            }
+            append(rawText.substring(lastIndex))
+        }
+
+        lastText = text.text
+        val result = TransformedText(annotatedString, OffsetMapping.Identity)
+        lastResult = result
+        return result
+    }
+}
+

@@ -14,6 +14,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
+import androidx.compose.ui.res.stringResource
+import com.agnocode.minimalhomeapp.R
+
 @Composable
 fun SettingsSectionHeader(
     title: String,
@@ -32,7 +35,7 @@ fun SettingsSectionHeader(
         Row(verticalAlignment = Alignment.CenterVertically) {
             Icon(
                 imageVector = if (isExpanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
-                contentDescription = if (isExpanded) "Collapse" else "Expand",
+                contentDescription = if (isExpanded) stringResource(R.string.settings_collapse) else stringResource(R.string.settings_expand),
                 tint = Color.Gray,
                 modifier = Modifier.size(28.dp)
             )

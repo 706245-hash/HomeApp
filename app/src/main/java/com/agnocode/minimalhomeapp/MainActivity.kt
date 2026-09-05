@@ -8,8 +8,8 @@ import android.os.Build
 import android.os.Bundle
 import android.util.Log
 import android.widget.Toast
-import java.text.SimpleDateFormat
-import java.util.Date
+import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
 import java.util.Locale
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -26,9 +26,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.agnocode.minimalhomeapp.R
 import com.agnocode.minimalhomeapp.ui.AppDrawerViewModel
 import com.agnocode.minimalhomeapp.ui.FocusModeViewModel
 import com.agnocode.minimalhomeapp.ui.MainViewModel
@@ -180,6 +182,7 @@ fun HomeScreen(
     val noteResults by mainViewModel.noteSearchResults.collectAsStateWithLifecycle()
     val smartActionHome by mainViewModel.smartAction.collectAsStateWithLifecycle()
     val smartActionDrawer by appDrawerViewModel.smartAction.collectAsStateWithLifecycle()
+    val activeAllowedPackages by appDrawerViewModel.activeAllowedPackagesFlow.collectAsStateWithLifecycle()
 
     val createDocumentLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.CreateDocument("application/json")
@@ -191,9 +194,9 @@ fun HomeScreen(
                     context.contentResolver.openOutputStream(it)?.use { stream ->
                         stream.write(json.toByteArray())
                     }
-                    Toast.makeText(context, "Backup saved successfully", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, context.getString(R.string.backup_success), Toast.LENGTH_SHORT).show()
                 } catch (e: Exception) {
-                    Toast.makeText(context, "Backup failed: ${e.message}", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, context.getString(R.string.backup_failed, e.message), Toast.LENGTH_SHORT).show()
                 }
             }
         }
@@ -211,14 +214,14 @@ fun HomeScreen(
                     if (json != null) {
                         val success = mainViewModel.importBackup(json)
                         if (success) {
-                            Toast.makeText(context, "Restore successful", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(context, context.getString(R.string.restore_success), Toast.LENGTH_SHORT).show()
                             // No need to restart as state flows are reactive
                         } else {
-                            Toast.makeText(context, "Restore failed: Invalid file", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(context, context.getString(R.string.restore_failed_invalid), Toast.LENGTH_SHORT).show()
                         }
                     }
                 } catch (e: Exception) {
-                    Toast.makeText(context, "Restore failed: ${e.message}", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, context.getString(R.string.restore_failed, e.message), Toast.LENGTH_SHORT).show()
                 }
             }
         }
@@ -235,9 +238,9 @@ fun HomeScreen(
                     Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION
                 )
                 mainViewModel.setAutoSyncUri(it.toString())
-                Toast.makeText(context, "Auto-sync location set", Toast.LENGTH_SHORT).show()
+                Toast.makeText(context, context.getString(R.string.sync_location_set), Toast.LENGTH_SHORT).show()
             } catch (e: Exception) {
-                Toast.makeText(context, "Failed to set sync location: ${e.message}", Toast.LENGTH_SHORT).show()
+                Toast.makeText(context, context.getString(R.string.sync_location_failed, e.message), Toast.LENGTH_SHORT).show()
             }
         }
     }
@@ -246,8 +249,8 @@ fun HomeScreen(
         if (BiometricHelper.canAuthenticate(context as FragmentActivity)) {
             BiometricHelper.authenticate(
                 activity = context,
-                title = "Authentication Required",
-                subtitle = "Please authenticate to proceed",
+                title = context.getString(R.string.auth_required),
+                subtitle = context.getString(R.string.auth_proceed),
                 onSuccess = onSuccess
             )
         } else {
@@ -267,6 +270,7 @@ fun HomeScreen(
                 tasks = notesViewModel.currentTasks,
                 weeklyProductivity = notesViewModel.weeklyProductivity.value,
                 allDailyNotes = notesViewModel.allDailyNotes,
+                backlinks = notesViewModel.currentBacklinks.value,
                 isEditingPastNote = notesViewModel.isEditingPastNote.value,
                 onDateSelect = { notesViewModel.selectNoteDate(it) },
                 onNoteTextChange = { notesViewModel.updateNoteText(it) },
@@ -279,7 +283,11 @@ fun HomeScreen(
                 onUndoPastNote = { notesViewModel.undoAndLockPastNote() }
             )
             1 -> {
-                val results = allApps.filter { it.label.isFuzzyMatch(universalSearchQuery) && it.packageName !in blockedApps.keys }.take(5)
+                val results = allApps.filter { 
+                    it.label.isFuzzyMatch(universalSearchQuery) && 
+                    it.packageName !in blockedApps.keys &&
+                    (activeAllowedPackages == null || it.packageName in activeAllowedPackages!!)
+                }.take(5)
                 HomeView(
                     favorites = favorites,
                     searchResults = results,
@@ -392,10 +400,11 @@ fun HomeScreen(
             onSetMonochromeIcons = { mainViewModel.setMonochromeIcons(it) },
             accentColor = mainViewModel.accentColor.value,
             onSetAccentColor = { mainViewModel.setAccentColor(it) },
+            hasUsageStatsPermission = { appDrawerViewModel.hasUsageStatsPermission() },
             ghostApps = allApps.filter { ghostPackages.contains(it.packageName) },
             onRemoveGhost = { appDrawerViewModel.toggleGhost(it) },
             onBackup = {
-                val timestamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(Date())
+                val timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"))
                 createDocumentLauncher.launch("minimal_home_backup_$timestamp.json")
             },
             onRestore = {

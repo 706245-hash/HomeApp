@@ -17,6 +17,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
+import androidx.compose.ui.res.stringResource
+import com.agnocode.minimalhomeapp.R
+
 @Composable
 fun SystemSettings(
     context: Context,
@@ -26,7 +29,7 @@ fun SystemSettings(
 ) {
     Column {
         SettingsSectionHeader(
-            title = "System",
+            title = stringResource(R.string.settings_section_system),
             isExpanded = isExpanded,
             onToggle = onToggle
         )
@@ -42,11 +45,11 @@ fun SystemSettings(
                     colors = ButtonDefaults.buttonColors(containerColor = Color.White, contentColor = Color.Black),
                     shape = MaterialTheme.shapes.small
                 ) {
-                    Text("Set as Default Launcher", fontWeight = FontWeight.Bold)
+                    Text(stringResource(R.string.system_set_default), fontWeight = FontWeight.Bold)
                 }
             } else {
                 Text(
-                    "App is set as default",
+                    stringResource(R.string.system_is_default),
                     color = Color.Gray,
                     fontSize = 14.sp,
                     modifier = Modifier.padding(start = 32.dp, bottom = 16.dp)
