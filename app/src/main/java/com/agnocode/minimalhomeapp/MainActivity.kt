@@ -76,6 +76,13 @@ class MainActivity : FragmentActivity() {
             }
         }
     }
+
+    override fun onResume() {
+        super.onResume()
+        if (::mainViewModel.isInitialized) {
+            mainViewModel.checkDefaultLauncher()
+        }
+    }
 }
 
 @Composable
@@ -307,6 +314,11 @@ fun HomeScreen(
                     onSearchToggle = { mainViewModel.isUniversalSearchActive.value = it },
                     onRemoveFavorite = { appDrawerViewModel.toggleFavorite(it) },
                     onBlock = { pkg, expiry -> focusModeViewModel.blockApp(pkg, expiry) },
+                    isDefaultLauncher = mainViewModel.isDefaultLauncher.value,
+                    onSetDefaultLauncher = {
+                        val intent = Intent(android.provider.Settings.ACTION_HOME_SETTINGS)
+                        context.startActivity(intent)
+                    },
                     onTasksClick = {
                         scope.launch {
                             pagerState.animateScrollToPage(0)

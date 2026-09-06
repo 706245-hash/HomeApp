@@ -1,6 +1,8 @@
 package com.agnocode.minimalhomeapp.ui
 
 import android.content.Context
+import android.content.Intent
+import android.content.pm.PackageManager
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -31,6 +33,7 @@ class MainViewModel @Inject constructor(
     var autoSyncUri = mutableStateOf<String?>(null)
     var accentColor = mutableStateOf("white")
     var monochromeIcons = mutableStateOf(true)
+    var isDefaultLauncher = mutableStateOf(true)
 
     val smartAction: StateFlow<SmartAction?> = universalSearchQuery
         .map { SearchCommandEngine.parse(it) }
@@ -73,6 +76,14 @@ class MainViewModel @Inject constructor(
         viewModelScope.launch {
             repository.checkAndPerformMigration()
         }
+        checkDefaultLauncher()
+    }
+
+    fun checkDefaultLauncher() {
+        val intent = Intent(Intent.ACTION_MAIN).apply { addCategory(Intent.CATEGORY_HOME) }
+        val resolveInfo = context.packageManager.resolveActivity(intent, PackageManager.MATCH_DEFAULT_ONLY)
+        val resolvedPackage = resolveInfo?.activityInfo?.packageName
+        isDefaultLauncher.value = resolvedPackage == context.packageName
     }
 
     private fun collectSettings() {

@@ -9,6 +9,7 @@ import android.net.Uri
 import android.os.BatteryManager
 import android.provider.AlarmClock
 import android.util.Log
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -16,8 +17,10 @@ import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Call
+import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.PhotoCamera
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
@@ -85,7 +88,9 @@ fun HomeView(
     onNoteClick: (String) -> Unit = {},
     onSearch: () -> Unit = {},
     showIcons: Boolean = false,
-    iconPackPackage: String? = null
+    iconPackPackage: String? = null,
+    isDefaultLauncher: Boolean = true,
+    onSetDefaultLauncher: () -> Unit = {}
 ) {
     var time by remember { mutableStateOf(currentTime()) }
     var showDashboard by remember { mutableStateOf(false) }
@@ -210,6 +215,36 @@ fun HomeView(
                         fontWeight = FontWeight.Medium,
                         modifier = Modifier.clickable { onTasksClick() }
                     )
+                }
+
+                if (!isDefaultLauncher) {
+                    Spacer(Modifier.height(24.dp))
+                    Surface(
+                        onClick = onSetDefaultLauncher,
+                        color = Color.DarkGray.copy(alpha = 0.2f),
+                        shape = RoundedCornerShape(8.dp),
+                        border = BorderStroke(0.5.dp, Color.DarkGray)
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(16.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Home,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(20.dp)
+                            )
+                            Column(modifier = Modifier.padding(start = 12.dp)) {
+                                Text(
+                                    stringResource(R.string.system_set_default),
+                                    color = Color.White,
+                                    fontSize = 14.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+                        }
+                    }
                 }
 
                 Spacer(Modifier.height(32.dp))
