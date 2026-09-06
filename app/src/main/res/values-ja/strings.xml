@@ -38,6 +38,7 @@
     <string name="notes_delete_task_message">この操作は取り消せません。</string>
     <string name="notes_weekly_performance">週間のパフォーマンス</string>
     <string name="notes_avg_completion">平均完了率： </string>
+    <string name="notes_future_forbidden">（まだ）タイムトラベルはできません</string>
 
     <!-- Settings Sections -->
     <string name="settings_section_system">システム</string>

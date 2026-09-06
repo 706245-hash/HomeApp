@@ -38,6 +38,7 @@
     <string name="notes_delete_task_message">此操作无法撤销。</string>
     <string name="notes_weekly_performance">每周表现</string>
     <string name="notes_avg_completion">平均完成率：</string>
+    <string name="notes_future_forbidden">（暂时）无法穿越时空</string>
 
     <!-- Settings Sections -->
     <string name="settings_section_system">系统</string>

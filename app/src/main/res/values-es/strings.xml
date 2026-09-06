@@ -38,6 +38,7 @@
     <string name="notes_delete_task_message">Esta acción no se puede deshacer.</string>
     <string name="notes_weekly_performance">Rendimiento semanal</string>
     <string name="notes_avg_completion">Promedio de finalización: </string>
+    <string name="notes_future_forbidden">No puedes viajar en el tiempo (todavía)</string>
 
     <!-- Settings Sections -->
     <string name="settings_section_system">Sistema</string>

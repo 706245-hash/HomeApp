@@ -38,6 +38,7 @@
     <string name="notes_delete_task_message">Cette action est irréversible.</string>
     <string name="notes_weekly_performance">Performance hebdomadaire</string>
     <string name="notes_avg_completion">Complétion moyenne : </string>
+    <string name="notes_future_forbidden">Impossible de voyager dans le temps (pour l\'instant)</string>
 
     <!-- Settings Sections -->
     <string name="settings_section_system">Système</string>

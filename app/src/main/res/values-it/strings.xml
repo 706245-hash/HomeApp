@@ -38,6 +38,7 @@
     <string name="notes_delete_task_message">Questa azione non può essere annullata.</string>
     <string name="notes_weekly_performance">Prestazioni settimanali</string>
     <string name="notes_avg_completion">Completamento medio: </string>
+    <string name="notes_future_forbidden">Non puoi viaggiare nel tempo (ancora)</string>
 
     <!-- Settings Sections -->
     <string name="settings_section_system">Sistema</string>

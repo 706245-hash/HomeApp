@@ -38,6 +38,7 @@
     <string name="notes_delete_task_message">Diese Aktion kann nicht rückgängig gemacht werden.</string>
     <string name="notes_weekly_performance">Wöchentliche Leistung</string>
     <string name="notes_avg_completion">Durchschnittliche Erledigung: </string>
+    <string name="notes_future_forbidden">Zeitreisen sind (noch) nicht möglich</string>
 
     <!-- Settings Sections -->
     <string name="settings_section_system">System</string>

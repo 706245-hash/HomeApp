@@ -38,6 +38,7 @@
     <string name="notes_delete_task_message">This action cannot be undone.</string>
     <string name="notes_weekly_performance">Weekly Performance</string>
     <string name="notes_avg_completion">Average Completion: </string>
+    <string name="notes_future_forbidden">Can\'t time travel (yet)</string>
 
     <!-- Settings Sections -->
     <string name="settings_section_system">System</string>

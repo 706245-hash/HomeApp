@@ -50,6 +50,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import android.content.Intent
+import android.widget.Toast
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.gestures.detectTapGestures
@@ -242,7 +243,12 @@ fun NotesView(
                             if (up != null) {
                                 up.consume()
                                 if (wikiAnnotation != null) {
-                                    onDateSelect(wikiAnnotation.item)
+                                    val targetDate = wikiAnnotation.item
+                                    if (targetDate > today) {
+                                        Toast.makeText(context, context.getString(R.string.notes_future_forbidden), Toast.LENGTH_SHORT).show()
+                                    } else {
+                                        onDateSelect(targetDate)
+                                    }
                                 } else if (urlAnnotation != null) {
                                     try {
                                         val intent = Intent(Intent.ACTION_VIEW, urlAnnotation.item.toUri())
