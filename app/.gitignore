@@ -1,1 +1,13 @@
 /build
+# Build artifacts
+/app/release/
+*.apk
+*.aab
+
+# Signing files
+*.jks
+*.keystore
+*.p12
+
+# Google Services secrets
+google-services.json

@@ -24,5 +24,8 @@ data class NoteTask(
     val text: String,
     
     @SerializedName("isChecked")
-    val isChecked: Boolean = false
+    val isChecked: Boolean = false,
+
+    @SerializedName("recurringDays")
+    val recurringDays: String? = null
 )

@@ -278,6 +278,7 @@ fun HomeScreen(
                 onUpdateTaskText = { id, text -> notesViewModel.updateTaskText(id, text) },
                 onToggleTask = { id, checked -> notesViewModel.toggleTask(id, checked) },
                 onDeleteTask = { notesViewModel.deleteTask(it) },
+                onUpdateTaskRecurringDays = { id, days -> notesViewModel.updateTaskRecurringDays(id, days) },
                 onToggleEditPastNote = { notesViewModel.unlockPastNote() },
                 onSavePastNote = { notesViewModel.saveAndLockPastNote() },
                 onUndoPastNote = { notesViewModel.undoAndLockPastNote() }

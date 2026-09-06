@@ -23,6 +23,15 @@
     <string name="notes_placeholder">Type your thoughts here&#8230;</string>
     <string name="notes_task_placeholder">Type your task here&#8230;</string>
     <string name="notes_delete_task">Delete Task</string>
+    <string name="notes_repeat_task">Repeat/Recurring Task</string>
+    <string name="notes_select_recurring_days">Select Recurring Days</string>
+    <string name="notes_day_monday">Mon</string>
+    <string name="notes_day_tuesday">Tue</string>
+    <string name="notes_day_wednesday">Wed</string>
+    <string name="notes_day_thursday">Thu</string>
+    <string name="notes_day_friday">Fri</string>
+    <string name="notes_day_saturday">Sat</string>
+    <string name="notes_day_sunday">Sun</string>
     <string name="notes_edit_history_title">Edit History?</string>
     <string name="notes_edit_history_message">Modifying the past can change your insights. Proceed?</string>
     <string name="notes_delete_task_title">Delete Task?</string>

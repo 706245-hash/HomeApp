@@ -83,7 +83,7 @@ class AppRepository @Inject constructor(
             noteWithTasks.note.date to DailyNote(
                 date = noteWithTasks.note.date,
                 content = noteWithTasks.note.content,
-                tasks = noteWithTasks.tasks.sortedBy { it.order }.map { NoteTask(it.id, it.text, it.isChecked) }
+                tasks = noteWithTasks.tasks.sortedBy { it.order }.map { NoteTask(it.id, it.text, it.isChecked, it.recurringDays) }
             )
         }
     }
@@ -136,7 +136,7 @@ class AppRepository @Inject constructor(
     suspend fun saveDailyNote(note: DailyNote) = withContext(Dispatchers.IO) {
         val entity = NoteEntity(note.date, note.content)
         val tasks = note.tasks.mapIndexed { index, task ->
-            TaskEntity(task.id, note.date, task.text, task.isChecked, index)
+            TaskEntity(task.id, note.date, task.text, task.isChecked, task.recurringDays, index)
         }
         noteDao.saveNoteWithTasks(entity, tasks)
     }

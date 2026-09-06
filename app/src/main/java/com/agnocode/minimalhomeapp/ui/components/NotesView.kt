@@ -35,28 +35,9 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Link
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.NorthEast
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Checkbox
-import androidx.compose.material3.CheckboxDefaults
-import androidx.compose.material3.DatePicker
-import androidx.compose.material3.DatePickerDefaults
-import androidx.compose.material3.DatePickerDialog
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.LinearProgressIndicator
-import androidx.compose.material3.LocalTextStyle
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.SelectableDates
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
-import androidx.compose.material3.rememberDatePickerState
-import androidx.compose.material3.rememberTimePickerState
-import androidx.compose.material3.TimePicker
-import androidx.compose.material3.TimePickerDefaults
+import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -116,6 +97,7 @@ fun NotesView(
     onUpdateTaskText: (String, String) -> Unit,
     onToggleTask: (String, Boolean) -> Unit,
     onDeleteTask: (String) -> Unit,
+    onUpdateTaskRecurringDays: (String, String?) -> Unit,
     onToggleEditPastNote: () -> Unit,
     onSavePastNote: () -> Unit,
     onUndoPastNote: () -> Unit
@@ -128,6 +110,8 @@ fun NotesView(
     var showDatePicker by remember { mutableStateOf(false) }
     var showWeeklyDashboard by remember { mutableStateOf(false) }
     var taskToDelete by remember { mutableStateOf<String?>(null) }
+    var taskToRepeat by remember { mutableStateOf<NoteTask?>(null) }
+    var menuTaskId by remember { mutableStateOf<String?>(null) }
 
     Column(
         modifier = Modifier
@@ -332,19 +316,53 @@ fun NotesView(
                             }
                         )
                         if (canEdit) {
-                            IconButton(onClick = { taskToDelete = task.id }) {
-                                Icon(
-                                    imageVector = Icons.Default.Delete,
-                                    contentDescription = stringResource(R.string.notes_delete_task),
-                                    tint = Color.DarkGray,
-                                    modifier = Modifier.size(20.dp)
-                                )
+                            Box {
+                                IconButton(onClick = { menuTaskId = task.id }) {
+                                    Icon(
+                                        imageVector = Icons.Default.MoreVert,
+                                        contentDescription = stringResource(R.string.settings),
+                                        tint = Color.DarkGray,
+                                        modifier = Modifier.size(20.dp)
+                                    )
+                                }
+                                DropdownMenu(
+                                    expanded = menuTaskId == task.id,
+                                    onDismissRequest = { menuTaskId = null },
+                                    containerColor = Color.Black,
+                                    modifier = Modifier.border(0.5.dp, Color.DarkGray, RoundedCornerShape(8.dp))
+                                ) {
+                                    DropdownMenuItem(
+                                        text = { Text(stringResource(R.string.notes_repeat_task), color = Color.White) },
+                                        onClick = {
+                                            taskToRepeat = task
+                                            menuTaskId = null
+                                        }
+                                    )
+                                    DropdownMenuItem(
+                                        text = { Text(stringResource(R.string.notes_delete_task), color = Color.Red) },
+                                        onClick = {
+                                            taskToDelete = task.id
+                                            menuTaskId = null
+                                        }
+                                    )
+                                }
                             }
                         }
                     }
                 }
             }
         }
+    }
+
+    if (taskToRepeat != null) {
+        RecurringDaysDialog(
+            initialDays = taskToRepeat?.recurringDays,
+            onDismiss = { taskToRepeat = null },
+            onConfirm = { days ->
+                taskToRepeat?.let { onUpdateTaskRecurringDays(it.id, days) }
+                taskToRepeat = null
+            }
+        )
     }
 
     if (showUnlockConfirm) {
@@ -402,11 +420,12 @@ fun NotesView(
                 .toEpochMilli(),
             selectableDates = object : SelectableDates {
                 override fun isSelectableDate(utcTimeMillis: Long): Boolean {
-                    val d = Instant.ofEpochMilli(utcTimeMillis)
+                    val dateObj = Instant.ofEpochMilli(utcTimeMillis)
                         .atZone(ZoneOffset.UTC)
                         .toLocalDate()
-                        .format(dateFmt)
-                    return d == today || allDailyNotes.containsKey(d)
+                    val d = dateObj.format(dateFmt)
+                    val t = LocalDate.now().format(dateFmt)
+                    return !dateObj.isAfter(LocalDate.now()) && (d == t || allDailyNotes.containsKey(d))
                 }
             }
         )
@@ -464,6 +483,84 @@ fun NotesView(
             onDismiss = { showWeeklyDashboard = false }
         )
     }
+}
+
+@Composable
+fun RecurringDaysDialog(
+    initialDays: String?,
+    onDismiss: () -> Unit,
+    onConfirm: (String?) -> Unit
+) {
+    val days = remember {
+        mutableStateListOf<Int>().apply {
+            if (!initialDays.isNullOrEmpty()) {
+                addAll(initialDays.split(",").filter { it.isNotEmpty() }.map { it.toInt() })
+            }
+        }
+    }
+    
+    val dayLabels = listOf(
+        stringResource(R.string.notes_day_monday),
+        stringResource(R.string.notes_day_tuesday),
+        stringResource(R.string.notes_day_wednesday),
+        stringResource(R.string.notes_day_thursday),
+        stringResource(R.string.notes_day_friday),
+        stringResource(R.string.notes_day_saturday),
+        stringResource(R.string.notes_day_sunday)
+    )
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.notes_select_recurring_days), color = Color.White) },
+        text = {
+            Column {
+                (1..7).forEach { day ->
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable {
+                                if (days.contains(day)) days.remove(day)
+                                else days.add(day)
+                            }
+                            .padding(vertical = 12.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Checkbox(
+                            checked = days.contains(day),
+                            onCheckedChange = {
+                                if (it) days.add(day)
+                                else days.remove(day)
+                            },
+                            colors = CheckboxDefaults.colors(
+                                checkedColor = MaterialTheme.colorScheme.primary,
+                                uncheckedColor = Color.DarkGray,
+                                checkmarkColor = Color.Black
+                            )
+                        )
+                        Text(
+                            text = dayLabels[day - 1],
+                            color = if (days.contains(day)) Color.White else Color.Gray,
+                            modifier = Modifier.padding(start = 12.dp)
+                        )
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = {
+                if (days.isEmpty()) onConfirm(null)
+                else onConfirm(days.sorted().joinToString(","))
+            }) {
+                Text(stringResource(R.string.ok), color = Color.White)
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text(stringResource(R.string.cancel), color = Color.Gray)
+            }
+        },
+        containerColor = Color.Black
+    )
 }
 
 @Composable

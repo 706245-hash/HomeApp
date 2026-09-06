@@ -23,6 +23,15 @@
     <string name="notes_placeholder">Tapez vos pensées ici&#8230;</string>
     <string name="notes_task_placeholder">Tapez votre tâche ici&#8230;</string>
     <string name="notes_delete_task">Supprimer la tâche</string>
+    <string name="notes_repeat_task">Tâche récurrente</string>
+    <string name="notes_select_recurring_days">Sélectionner les jours récurrents</string>
+    <string name="notes_day_monday">Lun</string>
+    <string name="notes_day_tuesday">Mar</string>
+    <string name="notes_day_wednesday">Mer</string>
+    <string name="notes_day_thursday">Jeu</string>
+    <string name="notes_day_friday">Ven</string>
+    <string name="notes_day_saturday">Sam</string>
+    <string name="notes_day_sunday">Dim</string>
     <string name="notes_edit_history_title">Modifier l\'historique ?</string>
     <string name="notes_edit_history_message">Modifier le passé peut changer vos perspectives. Continuer ?</string>
     <string name="notes_delete_task_title">Supprimer la tâche ?</string>

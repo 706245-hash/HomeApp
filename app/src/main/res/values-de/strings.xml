@@ -23,6 +23,15 @@
     <string name="notes_placeholder">Gedanken hier eingeben&#8230;</string>
     <string name="notes_task_placeholder">Aufgabe hier eingeben&#8230;</string>
     <string name="notes_delete_task">Aufgabe löschen</string>
+    <string name="notes_repeat_task">Wiederkehrende Aufgabe</string>
+    <string name="notes_select_recurring_days">Wiederholungstage auswählen</string>
+    <string name="notes_day_monday">Mo</string>
+    <string name="notes_day_tuesday">Di</string>
+    <string name="notes_day_wednesday">Mi</string>
+    <string name="notes_day_thursday">Do</string>
+    <string name="notes_day_friday">Fr</string>
+    <string name="notes_day_saturday">Sa</string>
+    <string name="notes_day_sunday">So</string>
     <string name="notes_edit_history_title">Verlauf bearbeiten?</string>
     <string name="notes_edit_history_message">Das Ändern der Vergangenheit kann deine Erkenntnisse beeinflussen. Fortfahren?</string>
     <string name="notes_delete_task_title">Aufgabe löschen?</string>

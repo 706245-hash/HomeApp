@@ -111,6 +111,41 @@ class NotesViewModel @Inject constructor(
         currentNoteText.value = note.content
         currentTasks.clear()
         currentTasks.addAll(note.tasks)
+
+        val today = LocalDate.now(clock).format(dateFmt)
+        if (selectedNoteDate.value != today) return // Recurring tasks only apply to today
+
+        // Add recurring tasks from other days if they don't exist yet
+        val date = try {
+            LocalDate.parse(selectedNoteDate.value, dateFmt)
+        } catch (e: Exception) {
+            LocalDate.now(clock)
+        }
+        val dayOfWeek = date.dayOfWeek.value.toString() // 1 (Monday) to 7 (Sunday)
+
+        var addedAny = false
+        allDailyNotes.values.forEach { otherNote ->
+            otherNote.tasks.forEach { task ->
+                val recurringDays = task.recurringDays ?: ""
+                if (recurringDays.split(",").contains(dayOfWeek)) {
+                    // Check if this recurring task (by text) already exists in today's tasks
+                    val alreadyExists = currentTasks.any { it.text == task.text }
+                    if (!alreadyExists) {
+                        val newTask = NoteTask(
+                            id = UUID.randomUUID().toString(),
+                            text = task.text,
+                            isChecked = false,
+                            recurringDays = task.recurringDays
+                        )
+                        currentTasks.add(newTask)
+                        addedAny = true
+                    }
+                }
+            }
+        }
+        if (addedAny) {
+            saveCurrentNoteImmediate()
+        }
     }
 
     fun resetToToday() {
@@ -121,6 +156,15 @@ class NotesViewModel @Inject constructor(
     }
 
     fun selectNoteDate(date: String) {
+        val today = LocalDate.now(clock)
+        val selectedDate = try {
+            LocalDate.parse(date, dateFmt)
+        } catch (e: Exception) {
+            today
+        }
+
+        if (selectedDate.isAfter(today)) return // Ignore future dates
+
         // Immediate save of previous note before switching
         if (saveJob?.isActive == true) {
             saveJob?.cancel()
@@ -181,6 +225,14 @@ class NotesViewModel @Inject constructor(
         }
     }
 
+    fun updateTaskRecurringDays(id: String, recurringDays: String?) {
+        val index = currentTasks.indexOfFirst { it.id == id }
+        if (index != -1) {
+            currentTasks[index] = currentTasks[index].copy(recurringDays = recurringDays)
+            triggerDebouncedSave()
+        }
+    }
+
     fun deleteTask(id: String) {
         currentTasks.removeAll { it.id == id }
         triggerDebouncedSave()
@@ -212,9 +264,17 @@ class NotesViewModel @Inject constructor(
     }
 
     fun getAvailableDates(): List<String> {
-        val today = LocalDate.now(clock).format(dateFmt)
-        return (allDailyNotes.keys + today)
+        val today = LocalDate.now(clock)
+        val todayStr = today.format(dateFmt)
+        return (allDailyNotes.keys + todayStr)
             .filter { it.matches(Regex("\\d{4}-\\d{2}-\\d{2}")) }
+            .filter {
+                try {
+                    !LocalDate.parse(it, dateFmt).isAfter(today)
+                } catch (e: Exception) {
+                    false
+                }
+            }
             .distinct()
             .sortedDescending()
     }

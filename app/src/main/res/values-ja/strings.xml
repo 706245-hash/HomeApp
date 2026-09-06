@@ -23,6 +23,15 @@
     <string name="notes_placeholder">ここに考えを入力してください&#8230;</string>
     <string name="notes_task_placeholder">ここにタスクを入力してください&#8230;</string>
     <string name="notes_delete_task">タスクを削除</string>
+    <string name="notes_repeat_task">繰り返しタスク</string>
+    <string name="notes_select_recurring_days">繰り返す曜日を選択</string>
+    <string name="notes_day_monday">月</string>
+    <string name="notes_day_tuesday">火</string>
+    <string name="notes_day_wednesday">水</string>
+    <string name="notes_day_thursday">木</string>
+    <string name="notes_day_friday">金</string>
+    <string name="notes_day_saturday">土</string>
+    <string name="notes_day_sunday">日</string>
     <string name="notes_edit_history_title">履歴を編集しますか？</string>
     <string name="notes_edit_history_message">過去を変更すると、洞察が変わる可能性があります。続行しますか？</string>
     <string name="notes_delete_task_title">タスクを削除しますか？</string>

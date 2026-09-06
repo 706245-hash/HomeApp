@@ -7,18 +7,25 @@ plugins {
 
 android {
     namespace = "com.agnocode.minimalhomeapp"
-    compileSdk {
-        version = release(37)
-    }
+    // Set to 37 because recent AndroidX dependencies (like Hilt 1.4.0) require it.
+    compileSdk = 37
+    ndkVersion = "27.0.12077973"
 
     defaultConfig {
         applicationId = "com.agnocode.minimalhomeapp"
         minSdk = 24
-        targetSdk = 35
-        versionCode = 4
-        versionName = "1.0.3"
+        // targetSdk updated to 37 to meet Google Play requirements.
+        targetSdk = 37
+        versionCode = 10
+        versionName = "1.01.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+    }
+
+    packaging {
+        jniLibs {
+            keepDebugSymbols.add("**/*.so")
+        }
     }
 
     buildTypes {

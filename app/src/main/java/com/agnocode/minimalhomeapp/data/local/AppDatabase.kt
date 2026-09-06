@@ -16,7 +16,7 @@ import com.agnocode.minimalhomeapp.data.local.entities.TaskEntity
         FocusModeEntity::class,
         FocusModePackageEntity::class
     ],
-    version = 1,
+    version = 2,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {

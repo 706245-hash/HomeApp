@@ -2,6 +2,8 @@ package com.agnocode.minimalhomeapp.di
 
 import android.content.Context
 import androidx.room.Room
+import androidx.room.migration.Migration
+import androidx.sqlite.db.SupportSQLiteDatabase
 import com.agnocode.minimalhomeapp.data.local.AppDatabase
 import com.agnocode.minimalhomeapp.data.local.dao.FocusModeDao
 import com.agnocode.minimalhomeapp.data.local.dao.NoteDao
@@ -16,6 +18,12 @@ import javax.inject.Singleton
 @InstallIn(SingletonComponent::class)
 object DatabaseModule {
 
+    private val MIGRATION_1_2 = object : Migration(1, 2) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL("ALTER TABLE tasks ADD COLUMN recurringDays TEXT")
+        }
+    }
+
     @Provides
     @Singleton
     fun provideAppDatabase(@ApplicationContext context: Context): AppDatabase {
@@ -23,7 +31,9 @@ object DatabaseModule {
             context,
             AppDatabase::class.java,
             "home_app_db"
-        ).build()
+        )
+            .addMigrations(MIGRATION_1_2)
+            .build()
     }
 
     @Provides

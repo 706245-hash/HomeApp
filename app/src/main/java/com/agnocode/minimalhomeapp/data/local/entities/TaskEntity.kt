@@ -34,6 +34,9 @@ data class TaskEntity(
     @SerializedName("isChecked")
     val isChecked: Boolean,
     
+    @SerializedName("recurringDays")
+    val recurringDays: String? = null,
+    
     @SerializedName("order")
     val order: Int = 0 // To maintain UI order
 )
